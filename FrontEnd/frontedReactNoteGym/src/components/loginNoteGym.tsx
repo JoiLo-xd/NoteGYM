@@ -27,7 +27,7 @@ export default function LoginNoteGym() {
       </h2>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="username" className="text-gray-700">
+        <Label htmlFor="username" className="text-gray-700 text-black">
           Nombre de usuario
         </Label>
         <Input
@@ -43,7 +43,7 @@ export default function LoginNoteGym() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email" className="text-gray-700">
+        <Label htmlFor="email" className="text-gray-700 text-black">
           Email
         </Label>
         <Input
@@ -60,23 +60,26 @@ export default function LoginNoteGym() {
 
       <div className="flex gap-2 mt-4">
         <Button
-          className="flex-1 text-white"
-          style={{ backgroundColor: "#7FDA25" }}
+          className="flex-1 text-black"
+          style={{ backgroundColor: "#ed8147ff" }}
           type="submit"
         >
           Enviar
         </Button>
-        <Button className="flex-1" type="reset" variant="outline">
+        <Button className="flex-1 text-black" type="reset" variant="outline"
+        style={{ backgroundColor: "#bbbfbfff" }}>
+          
           Borrar
         </Button>
       </div>
 
       <div className="mt-4 text-center">
           <Button
-            style={{ backgroundColor: "#05E1FA" }}
-            className="w-full text-white"
+            className="w-full"
+            style={{ backgroundColor: "#59f26bff" }}
+            
           >
-            <Link to="/newUserGym">Registrate aquí</Link>
+            <Link to="/newUserGym" className="text-black">Registro Nuevo Usuario</Link>
           </Button>
       </div>
 
