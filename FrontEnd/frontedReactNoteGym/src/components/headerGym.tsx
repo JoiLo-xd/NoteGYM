@@ -1,9 +1,8 @@
 export default function HeaderGym() {
   return (
-    <header className="w-full h-20 px-6 bg-black flex items-center border-b border-gray-700">
+    <header className="w-full h-20 bg-black flex items-center justify-center border-b border-gray-700">
 
-      <div className="flex items-center space-x-3">
-        
+      <div className="flex mx-auto justify-center items-center space-x-3">
 
         <h1 className="text-2xl font-bold text-white">
           <img 
