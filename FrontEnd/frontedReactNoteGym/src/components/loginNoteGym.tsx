@@ -2,7 +2,7 @@ import React from "react";
 import {Form, Input, Button, badge} from "@heroui/react";
 import { Link } from "react-router-dom";
 
-export default function FormularioNoteGym() {
+export default function LoginNoteGym() {
 
   return (
     <Form

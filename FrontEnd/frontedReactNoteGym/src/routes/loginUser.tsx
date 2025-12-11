@@ -1,11 +1,11 @@
 import HeaderGym from "../components/headerGym";
-import FormularioNoteGym from "../components/formularioNoteGym";
+import LoginNoteGym from "../components/loginNoteGym";
 
 export default function LoginUser() {
   return (
     <div>
       <HeaderGym />
-      <FormularioNoteGym />
+      <LoginNoteGym />
     </div>
   );
 }
