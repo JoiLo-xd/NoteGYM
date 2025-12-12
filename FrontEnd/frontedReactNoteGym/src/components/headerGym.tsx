@@ -1,21 +1,25 @@
 export default function HeaderGym() {
   return (
-    <header className="w-full h-20 bg-black flex items-center justify-center border-b border-gray-700">
+    <header className="header">
 
-      <div className="flex mx-auto justify-center items-center space-x-3">
+      <div className="flex mx-auto justify-left items-left space-x-3 p-4">
 
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-white flex ">
           <img 
           src="/logo.jpg"
           style={{
             borderRadius: "20%",
-            marginRight: "15px"
+            marginRight: "10px",
+            marginTop: "20px",
+            width: "80px",
+            height: "80px",
           }}
           width={50} 
-          height={50}
+          height={40}
           alt="Logo NoteGym"
-          className="w-10 h-10 object-contain"
-        />NoteGym
+          className= "object-contain text-white  absolute left-6 top-12 -translate-y-1/2"
+        />
+         <span style={{color:"#d97641",fontSize:"60px",marginLeft:"18px",backgroundColor:"#000000",borderRadius:"15px",padding:"10px"}}>NoteGym</span>
         </h1>
         <hr />
       </div>

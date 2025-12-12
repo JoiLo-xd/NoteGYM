@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 export default function LoginNoteGym() {
   const [errors, setErrors] = React.useState<{
     username?: string;
-    email?: string;
+    password?: string;
   }>({});
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -28,7 +28,7 @@ export default function LoginNoteGym() {
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="username" className="text-gray-700 text-black">
-          Nombre de usuario
+          UserName
         </Label>
         <Input
           id="username"
@@ -43,18 +43,18 @@ export default function LoginNoteGym() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email" className="text-gray-700 text-black">
-          Email
+        <Label htmlFor="password" className="text-gray-700 text-black">
+          Password
         </Label>
         <Input
-          id="email"
-          name="email"
-          placeholder="Introduce tu email"
-          type="email"
+          id="password"
+          name="password"
+          placeholder="Introduce tu contraseña"
+          type="password"
           required
         />
-        {errors.email && (
-          <span className="text-red-500 text-sm">{errors.email}</span>
+        {errors.password && (
+          <span className="text-red-500 text-sm">{errors.password}</span>
         )}
       </div>
 
@@ -74,13 +74,10 @@ export default function LoginNoteGym() {
       </div>
 
       <div className="mt-4 text-center">
-          <Button
-            className="w-full"
-            style={{ backgroundColor: "#59f26bff" }}
-            
-          >
-            <Link to="/newUserGym" className="text-black">Registro Nuevo Usuario</Link>
-          </Button>
+    <span className="text-gray-600">  ¿No tienes una cuenta? </span>
+    <Link to="/newUserGym" className="text-blue-500 hover:underline">
+      Regístrate aquí
+    </Link>
       </div>
 
     </form>

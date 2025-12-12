@@ -1,9 +1,48 @@
 #root {
   flex-direction: column;
+  background: linear-gradient(180deg, #000000, #ff7a00);
 
   gap: 2rem;
   padding: 2rem;
 
+}
+
+.bodyRegister {
+  background: linear-gradient(180deg, #000000, #ff7a00);
+ 
+}
+
+.inputRegister {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.formRegister {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: #ee0606cc;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  background-image: url("../public/fotoHeaderOriginal.png");
+  background-size: cover;
+  background-position: center;
+  background-size: 95%;
+  width: calc(100% + 4rem);
+  margin: -2rem -2rem 0; 
+  padding: 1rem 2rem;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 
@@ -12,7 +51,10 @@
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
+  
 }
+  
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
@@ -42,3 +84,5 @@
 .read-the-docs {
   color: #888;
 }
+
+
