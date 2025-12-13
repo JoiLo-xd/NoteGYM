@@ -23,7 +23,7 @@ export default function LoginNoteGym() {
       className="w-full max-w-xs flex flex-col gap-4 p-6 bg-white shadow-2xl rounded-lg"
     >
       <h2 className="text-2xl font-semibold text-center mb-4 text-gray-800">
-        Iniciar Sesión
+        Log in
       </h2>
 
       <div className="flex flex-col gap-2">
@@ -74,7 +74,7 @@ export default function LoginNoteGym() {
       </div>
 
       <div className="mt-4 text-center">
-    <span className="text-gray-600">  ¿No tienes una cuenta? </span>
+    <span className="text-gray-600">  ¿No tienes una cuenta? </span><br/>
     <Link to="/newUserGym" className="text-blue-500 hover:underline">
       Regístrate aquí
     </Link>
