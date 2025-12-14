@@ -1,4 +1,3 @@
-import { colors, useLabelPlacement } from "@heroui/react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +50,7 @@ export default function RegisterNoteGym () {
 
   <div className="flex flex-col gap-5">
     
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       <label htmlFor="username" className="block text-sm text-black mb-1 ml-1">
         Username
       </label>
@@ -66,8 +65,8 @@ export default function RegisterNoteGym () {
       />
     </div>
 
-    <div className="flex flex-col gap-2">
-      <label htmlFor="password" className="block text-sm text-black mb-1 ml-1 transition-colors group-focus-within:text-[#FF5722]">
+    <div className="flex flex-col">
+      <label htmlFor="password" className="block text-sm text-black ml-1 transition-colors group-focus-within:text-[#FF5722]">
         Password
       </label>
       <input
@@ -81,7 +80,7 @@ export default function RegisterNoteGym () {
       />
     </div>
 
-    <div className="flex flex-col gap-2 relative">
+    <div className="flex flex-col relative">
       <label 
         htmlFor="passwordRep" 
         className={`block text-sm mb-1 ml-1 transition-colors ${
@@ -100,7 +99,7 @@ export default function RegisterNoteGym () {
         className={`w-full bg-transparent border-b py-2 px-1 focus:outline-none transition-colors placeholder-gray-600
           ${
             showPasswordError 
-              ? "border-red-500 text-red-100 focus:border-red-500" // Estilo Error
+              ? "border-red-500 text-red-100 focus:border-red" // Estilo Error
               : "border-gray-600 text-black focus:border-[#FF5722]" // Estilo Normal
           }
         `}
@@ -120,7 +119,7 @@ export default function RegisterNoteGym () {
       )}
     </div>
 
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       <label htmlFor="name" className="block text-sm text-black mb-1 ml-1 transition-colors group-focus-within:text-[#FF5722]">
         Name
       </label>
@@ -135,7 +134,7 @@ export default function RegisterNoteGym () {
       />
     </div>
 
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       <label htmlFor="email" className="block text-sm text-black mb-1 ml-1 transition-colors group-focus-within:text-[#FF5722]">
         Email
       </label>
@@ -150,7 +149,7 @@ export default function RegisterNoteGym () {
       />
     </div>
 
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       <label className="block text-sm text-black mb-3 ml-1">Sex</label>
       <div className="flex gap-6">
         <label className="flex items-center gap-2 cursor-pointer group">
@@ -160,7 +159,7 @@ export default function RegisterNoteGym () {
             value="HOMBRE"
             checked={formData.sexo === "HOMBRE"}
             onChange={handleChange}
-            className="appearance-none w-4 h-4 border border-gray-500 rounded-full checked:bg-[#FF5722] checked:border-[#FF5722] focus:ring-1 focus:ring-[#FF5722] ring-offset-0 bg-[#2b2b2b]"
+            className="appearance-none w-4 h-4 border border-gray-500 rounded-full checked:bg-[#FF5722] checked:border-[#FF5722] transition-colors focus:ring-1 focus:ring-[#FF5722] ring-offset-0 bg-[#2b2b2b]"
             required
           />
           <span className="text-black transition-colors">Man</span>
@@ -173,7 +172,7 @@ export default function RegisterNoteGym () {
             value="MUJER"
             checked={formData.sexo === "MUJER"}
             onChange={handleChange}
-            className="appearance-none w-4 h-4 border border-gray-500 rounded-full checked:bg-[#FF5722] checked:border-[#FF5722] focus:ring-1 focus:ring-[#FF5722] ring-offset-0 bg-[#2b2b2b]"
+            className="appearance-none w-4 h-4 border border-gray-500 rounded-full checked:bg-[#FF5722] checked:border-[#FF5722] transition-colors focus:ring-1 focus:ring-[#FF5722] ring-offset-0 bg-[#2b2b2b]"
             required
           />
           <span className="text-black transition-colors">Woman</span>

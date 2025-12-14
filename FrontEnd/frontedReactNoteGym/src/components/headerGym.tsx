@@ -19,7 +19,7 @@ export default function HeaderGym() {
           alt="Logo NoteGym"
           className= "object-contain text-white  absolute left-6 top-12 -translate-y-1/2"
         />
-         <span style={{color:"#d97641",fontSize:"60px",marginLeft:"18px",backgroundColor:"#000000",borderRadius:"15px",padding:"10px"}}>NoteGym</span>
+         <span style={{color:"#d97641",fontSize:"60px",marginLeft:"18px",borderRadius:"15px",padding:"10px"}}>NoteGym</span>
         </h1>
         <hr />
       </div>
