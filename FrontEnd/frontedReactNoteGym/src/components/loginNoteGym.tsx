@@ -5,6 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function LoginNoteGym() {
+
+  const API_BASE_URL = "http://localhost:8080";
+
   const [formData, setFormData] = React.useState({
     username: "",
     password: "",
@@ -42,7 +45,9 @@ export default function LoginNoteGym() {
     setServerMessage("");
     
     try {
-      const res = await fetch("http://localhost:5173/loginUserGym", { 
+      const LOGIN_URL = API_BASE_URL + "/api/user/login";
+
+      const res = await fetch(LOGIN_URL, { 
         method: "POST",
         headers: {
           "Content-Type": "application/json",
