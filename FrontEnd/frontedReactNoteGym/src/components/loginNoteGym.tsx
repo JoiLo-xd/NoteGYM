@@ -2,19 +2,84 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function LoginNoteGym() {
+  const [formData, setFormData] = React.useState({
+    username: "",
+    password: "",
+  });
+
+  const navigate = useNavigate();
+
+  const [status, setStatus] = React.useState("idle"); 
+  const [serverMessage, setServerMessage] = React.useState("");
+
   const [errors, setErrors] = React.useState<{
     username?: string;
     password?: string;
+    global?: string; // Usaremos 'global' para el mensaje del servidor
   }>({});
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    // limpiar errores al escribir
+    if (errors.global) {
+        setErrors({});
+        setServerMessage("");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Validación básica
-    const newErrors: typeof errors = {};
-    setErrors(newErrors);
+
+    // Resetear estados antes de enviar
+    setErrors({});
+    setStatus("loading");
+    setServerMessage("");
+    
+    try {
+      const res = await fetch("http://localhost:5173/loginUserGym", { 
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      console.log("Respuesta del backend (Login):", data);
+
+      if (res.ok) {
+        // Código HTTP 200-299: Éxito
+        setStatus("success");
+        setServerMessage(data.message || "¡Inicio de sesión exitoso!");
+        // Aquí debes guardar el token de autenticación (JWT) si lo hay
+        localStorage.setItem('token', data.token);
+        
+        setTimeout(() => {
+            navigate('/dashboard'); // Redirige al dashboard
+        }, 1500); 
+        
+      } else {
+        // Código HTTP 4xx o 5xx: Error (credenciales incorrectas, etc.)
+        setStatus("error");
+        
+        // El backend debe enviar un mensaje de error claro (ej: 'Usuario o contraseña incorrectos')
+        const errorMessage = data.message || data.error || "Usuario o contraseña incorrectos.";
+        setServerMessage(errorMessage);
+        setErrors({ global: errorMessage }); 
+      }
+    } catch (error) {
+      // Error de red (servidor caído o problema de CORS)
+      console.error("Error en la conexión:", error);
+      setStatus("error");
+      setServerMessage("Error de conexión con el servidor. Inténtalo de nuevo.");
+      setErrors({ global: "Error de conexión con el servidor." }); 
+    }
   };
 
   return (
@@ -26,6 +91,19 @@ export default function LoginNoteGym() {
         Log in
       </h2>
 
+      {/* 4. MENSAJES DE FEEDBACK GLOBAL */}
+      {status === "success" && (
+        <div className="p-3 rounded bg-green-100 border border-green-400 text-green-700 text-sm text-center">
+          ✅ {serverMessage}
+        </div>
+      )}
+      
+      {(status === "error" || errors.global) && (
+        <div className="p-3 rounded bg-red-100 border border-red-400 text-red-700 text-sm text-center animate-pulse">
+          ⚠️ {serverMessage}
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         <Label htmlFor="username" className="text-gray-700 text-black">
           UserName
@@ -35,6 +113,8 @@ export default function LoginNoteGym() {
           name="username"
           placeholder="Introduce tu nombre de usuario"
           type="text"
+          value={formData.username} // VINCULAR ESTADO
+          onChange={handleChange}     // MANEJADOR DE CAMBIO
           required
         />
         {errors.username && (
@@ -51,6 +131,8 @@ export default function LoginNoteGym() {
           name="password"
           placeholder="Introduce tu contraseña"
           type="password"
+          value={formData.password} // VINCULAR ESTADO
+          onChange={handleChange}     // MANEJADOR DE CAMBIO
           required
         />
         {errors.password && (
@@ -60,15 +142,25 @@ export default function LoginNoteGym() {
 
       <div className="flex gap-2 mt-4">
         <Button
-          className="flex-1 text-black"
+          className={`flex-1 text-black ${status === 'loading' ? 'opacity-70 cursor-not-allowed' : ''}`}
           style={{ backgroundColor: "#ed8147ff" }}
           type="submit"
+          disabled={status === 'loading'} // Deshabilita durante la carga
         >
-          Enviar
+          {status === 'loading' ? "Cargando..." : "Enviar"}
         </Button>
-        <Button className="flex-1 text-black" type="reset" variant="outline"
-        style={{ backgroundColor: "#bbbfbfff" }}>
-          
+        <Button 
+          className="flex-1 text-black" 
+          type="reset" 
+          variant="outline"
+          style={{ backgroundColor: "#bbbfbfff" }}
+          onClick={() => { // Limpia estados al resetear
+            setFormData({ username: "", password: "" });
+            setStatus("idle");
+            setErrors({});
+            setServerMessage("");
+          }}
+        >
           Borrar
         </Button>
       </div>

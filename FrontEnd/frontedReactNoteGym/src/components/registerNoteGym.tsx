@@ -1,7 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function RegisterNoteGym () {
   const [formData, setFormData] = React.useState({
@@ -13,6 +10,9 @@ export default function RegisterNoteGym () {
     sexo: ""
   });
 
+  const [status, setStatus] = React.useState("idle"); 
+  const [serverMessage, setServerMessage] = React.useState("");
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -22,17 +22,44 @@ export default function RegisterNoteGym () {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Evitar enviar si las contraseñas no coinciden
+    if (formData.password !== formData.passwordRep) {
+        setStatus("error");
+        setServerMessage("Las contraseñas no coinciden.");
+        return;
+    }
 
-    const res = await fetch("http://localhost:5174/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(formData)
-    });
+    setStatus("loading");
+    setServerMessage("");
 
-    const data = await res.json();
-    console.log("Respuesta del backend:", data);
+    try {
+      const res = await fetch("http://localhost:5173/newUserGym", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus("success");
+        setServerMessage(data.message || "¡Usuario registrado correctamente!");
+        
+        // Limpiar el formulario
+        setFormData({ username: "", password: "", passwordRep: "", name: "", email: "", sexo: "" });
+      } else {
+        setStatus("error");
+        setServerMessage(data.message || data.error || "Ocurrió un error al registrar.");
+      }
+
+    } catch (error) {
+      console.error(error);
+      setStatus("error");
+      setServerMessage("Error de conexión con el servidor.");
+    }
   };
 
   const passwordsMatch = formData.password === formData.passwordRep;
@@ -180,12 +207,26 @@ export default function RegisterNoteGym () {
       </div>
     </div>
 
+      {status === "error" && (
+          <div className="p-3 rounded bg-red-100 border border-red-400 text-red-700 text-sm text-center animate-pulse">
+            ⚠️ {serverMessage}
+          </div>
+        )}
+
+        {status === "success" && (
+          <div className="p-3 rounded bg-green-100 border border-green-400 text-green-700 text-sm text-center">
+            ✅ {serverMessage}
+          </div>
+        )}
+
     <button
-      className="w-full mt-6 bg-[#FF5722] hover:bg-[#F4511E] text-black font-bold py-3 rounded-xl shadow-[0_4px_14px_0_rgba(255,87,34,0.39)] hover:shadow-[0_6px_20px_rgba(255,87,34,0.34)] hover:-translate-y-0.5 transition-all duration-200"
-      type="submit"
-    >
-      Enviar
-    </button>
+          className={`w-full mt-6 bg-[#FF5722] hover:bg-[#F4511E] text-black font-bold py-3 rounded-xl shadow-[0_4px_14px_0_rgba(255,87,34,0.39)] hover:shadow-[0_6px_20px_rgba(255,87,34,0.34)] hover:-translate-y-0.5 transition-all duration-200 
+          ${status === 'loading' ? 'opacity-70 cursor-not-allowed' : ''}`}
+          type="submit"
+          disabled={status === 'loading'}
+        >
+          {status === 'loading' ? "Registrando..." : "Send"}
+        </button>
     
   </div>
 </form>

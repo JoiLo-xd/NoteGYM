@@ -1,7 +1,7 @@
 #root {
   flex-direction: column;
   background: linear-gradient(180deg, #000000, #ff7a00);
-  background-image: url("../fondo_prueva.png");
+  background-image: url("../fondo.png");
   gap: 2rem;
   padding: 2rem;
 
