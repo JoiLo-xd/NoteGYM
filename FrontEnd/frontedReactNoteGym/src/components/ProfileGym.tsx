@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
-
-
-// Define la estructura de los datos del usuario
 interface UserData {
   name: string;
   username: string;
@@ -10,7 +7,6 @@ interface UserData {
   sexo: string;
 }
 
-// Datos de ejemplo (sustituye esto por la carga real de tu API)
 const initialData: UserData = {
   name: "Juan Pérez García",
   username: "JuanPGym",
@@ -20,37 +16,62 @@ const initialData: UserData = {
 
 export default function ProfileGym() {
   const [formData, setFormData] = useState<UserData>(initialData);
+  const [originalData, setOriginalData] = useState<UserData>(initialData);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
-    // aquí irá tu fetch real
+    // si cargas del backend: setFormData(data); setOriginalData(data);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
-  const handleCancel = () => { // ✅ AÑADIDO
+  const startEditing = () => {
+    setMessage(null);
+    setOriginalData(formData);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
     setIsEditing(false);
     setMessage(null);
-    setFormData(initialData); // luego, cuando cargues de API, cámbialo por los datos reales cargados
+    setFormData(originalData);
     setNewPassword("");
     setConfirmPassword("");
+  };
+
+  const hasProfileChanged = () => {
+    const sameData =
+      formData.name === originalData.name &&
+      formData.username === originalData.username &&
+      formData.email === originalData.email &&
+      formData.sexo === originalData.sexo;
+
+    const noPasswordChange = newPassword === "" && confirmPassword === "";
+
+    return !(sameData && noPasswordChange);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
+    if (!hasProfileChanged()) {
+      setMessage({ type: "error", text: "No has modificado ningún dato." });
+      return;
+    }
+
     if (newPassword && newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'Las contraseñas no coinciden.' });
+      setMessage({ type: "error", text: "Las contraseñas no coinciden." });
       return;
     }
 
@@ -62,32 +83,47 @@ export default function ProfileGym() {
     try {
       console.log("Datos enviados al servidor:", dataToSave);
 
-      setMessage({ type: 'success', text: '¡Perfil actualizado correctamente!' });
+      setMessage({ type: "success", text: "¡Perfil actualizado correctamente!" });
+      setOriginalData(formData);
       setIsEditing(false);
+
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error al conectar con el servidor.' });
+      setMessage({ type: "error", text: "Error al conectar con el servidor." });
     }
   };
 
   return (
-    <div className="pt-24"> 
-      <div className="profile-page"> 
-        <div className="profile-card"> 
-          <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">
-            Mi Perfil
-          </h1>
+    <div className="pt-24">
+      <div className="profile-page">
+        <div className="profile-card">
+          <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">Mi Perfil</h1>
 
           {message && (
-            <div className={`p-3 rounded mb-4 text-sm text-center font-medium ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            <div
+              className={`p-3 rounded mb-4 text-sm text-center font-medium ${
+                message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
+            >
               {message.text}
+            </div>
+          )}
+
+          {!isEditing && (
+            <div className="flex justify-end mb-6">
+              <button
+                type="button"
+                onClick={startEditing}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-200 shadow-md"
+              >
+                Editar Perfil
+              </button>
             </div>
           )}
 
           <form onSubmit={handleSave}>
             <div className="space-y-6">
-
               <ProfileInput
                 label="Nombre Completo"
                 name="name"
@@ -113,9 +149,23 @@ export default function ProfileGym() {
                 isEditing={isEditing}
               />
 
-              <div className="flex justify-between items-center py-2 border-b border-gray-300">
-                <label className="text-lg font-medium text-gray-600">Sexo</label>
-                <span className="text-lg text-gray-800 font-semibold">{formData.sexo}</span>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center py-2 border-b border-gray-300">
+                <label className="text-lg font-medium text-gray-600 mb-1 md:mb-0">Sexo</label>
+
+                {isEditing ? (
+                  <select
+                    value={formData.sexo}
+                    onChange={(e) => setFormData({ ...formData, sexo: e.target.value })}
+                    className="w-full md:w-2/3 p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF5722] transition duration-150 text-lg text-gray-800"
+                  >
+                    <option value="HOMBRE">HOMBRE</option>
+                    <option value="MUJER">MUJER</option>
+                    <option value="OTRO">OTRO</option>
+                    <option value="PREFIERO_NO_DECIRLO">PREFIERO NO DECIRLO</option>
+                  </select>
+                ) : (
+                  <span className="text-lg text-gray-800 font-semibold md:w-2/3 md:text-right">{formData.sexo}</span>
+                )}
               </div>
 
               {isEditing && (
@@ -144,44 +194,31 @@ export default function ProfileGym() {
               )}
             </div>
 
-            {/* ✅ AÑADIDO: botones abajo */}
-            <div className="mt-10 flex justify-end gap-3">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-lg transition duration-200 shadow-sm"
-                  >
-                    Cancelar
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="bg-[#FF5722] hover:bg-[#F4511E] text-white font-semibold py-2 px-5 rounded-lg transition duration-200 shadow-md"
-                  >
-                    Aplicar cambios
-                  </button>
-                </>
-              ) : (
+            {isEditing && (
+              <div className="mt-10 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-200 shadow-md"
+                  onClick={handleCancel}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-lg transition duration-200 shadow-sm"
                 >
-                  Editar Perfil
+                  Cancelar
                 </button>
-              )}
-            </div>
-          </form>
 
+                <button
+                  type="submit"
+                  className="bg-[#FF5722] hover:bg-[#F4511E] text-white font-semibold py-2 px-5 rounded-lg transition duration-200 shadow-md"
+                >
+                  Aplicar cambios
+                </button>
+              </div>
+            )}
+          </form>
         </div>
       </div>
     </div>
   );
 }
 
-// Componente auxiliar para un input de perfil
 interface ProfileInputProps {
   label: string;
   name: keyof UserData | string;
@@ -208,12 +245,10 @@ const ProfileInput: React.FC<ProfileInputProps> = ({ label, name, value, onChang
           onChange={onChange}
           placeholder={placeholder || label}
           className="w-full md:w-2/3 p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF5722] transition duration-150 text-lg text-gray-800"
-          required={type !== 'password'}
+          required={type !== "password"}
         />
       ) : (
-        <span className="text-lg text-gray-800 font-semibold md:w-2/3 md:text-right">
-          {value}
-        </span>
+        <span className="text-lg text-gray-800 font-semibold md:w-2/3 md:text-right">{value}</span>
       )}
     </div>
   );
