@@ -14,7 +14,8 @@ const baseMenuItems = [
 ];
 
 const adminMenuItems = [
-    { name: "Modificar Usuarios", path: "/admin/ModUsers" }
+    { name: "Modificar Usuarios", path: "/admin/ModUsers" },
+    { name: "Desbloquear Usuarios", path: "/admin/DesbloqUsers" }
 ];
 
 export default function Sidebar({ userRole }: SidebarProps) { 
