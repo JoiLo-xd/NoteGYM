@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/auditoria-sesiones.log</file>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            
+            <fileNamePattern>logs/auditoria-sesiones.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            
+            <maxFileSize>10MB</maxFileSize> 
+            
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap> 
+        </rollingPolicy>
+        
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [AUDIT] %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <logger name="com.notegym.back.auditor" level="INFO" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+</configuration>
