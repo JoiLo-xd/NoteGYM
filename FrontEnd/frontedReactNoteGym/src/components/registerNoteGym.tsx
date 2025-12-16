@@ -1,4 +1,5 @@
 import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function RegisterNoteGym () {
   const [formData, setFormData] = React.useState({
@@ -9,6 +10,8 @@ export default function RegisterNoteGym () {
     email: "",
     sexo: ""
   });
+
+  const navigate = useNavigate();
 
   const [status, setStatus] = React.useState("idle"); 
   const [serverMessage, setServerMessage] = React.useState("");
@@ -34,7 +37,7 @@ export default function RegisterNoteGym () {
     setServerMessage("");
 
     try {
-      const res = await fetch("http://localhost:5173/newUserGym", {
+      const res = await fetch("http://localhost:8080/api/user/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -48,11 +51,15 @@ export default function RegisterNoteGym () {
         setStatus("success");
         setServerMessage(data.message || "¡Usuario registrado correctamente!");
         
+        setTimeout(() => {
+            navigate('/loginUserGym'); // Redirige al dashboard
+        }, 1500); 
+
         // Limpiar el formulario
         setFormData({ username: "", password: "", passwordRep: "", name: "", email: "", sexo: "" });
       } else {
         setStatus("error");
-        setServerMessage(data.message || data.error || "Ocurrió un error al registrar.");
+        setServerMessage(data.message);
       }
 
     } catch (error) {
@@ -228,6 +235,18 @@ export default function RegisterNoteGym () {
           {status === 'loading' ? "Registrando..." : "Send"}
         </button>
     
+    <div className="mt-4 text-center">
+                    <span className="text-gray-600">
+                        ¿Ya tienes una cuenta?
+                    </span>
+                    <Link 
+                        to="/loginUserGym" // Asegúrate de que esta es la ruta correcta de tu login
+                        className="ml-2 text-[#FF5722] hover:text-[#F4511E] hover:underline font-semibold transition-colors duration-200"
+                    >
+                        Inicia Sesión aquí
+                    </Link>
+                </div>
+
   </div>
 </form>
 
