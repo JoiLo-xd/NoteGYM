@@ -66,6 +66,9 @@ export default function LoginNoteGym() {
         //localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.username);
         localStorage.setItem('password', data.password);
+        localStorage.setItem('name', data.name);
+        localStorage.setItem('role', data.role);
+
 
         //alert(localStorage.getItem('username') + " " + localStorage.getItem('password')); // PRUEBA DE ALMACENAMIENTO
         

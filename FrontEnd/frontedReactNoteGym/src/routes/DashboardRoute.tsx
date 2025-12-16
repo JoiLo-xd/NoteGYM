@@ -16,11 +16,12 @@ export default function DashboardRoute() {
         const fetchUserData = async () => {
             // 1. Obtener el token JWT de localStorage
             //const token = localStorage.getItem('token'); 
-            const username = localStorage.getItem('username'); 
-            const password = localStorage.getItem('password'); 
+            setUserName(localStorage.getItem('username') || '');
+            setUserRole(localStorage.getItem('role') as UserRole || 'user');
+            const password = localStorage.getItem('password');
             
             // Si no hay token, redirigimos al login (esto se hace mejor en ProtectedRoute, pero es una buena verificación aquí)
-            if (!username || !password) {
+            if (!userName || !password) {
                 console.error("No se encontró usuario. Redirigiendo al login...");
                 // Aquí podrías usar useNavigate si este componente no es una ruta principal
                 // O dejar que el ProtectedRoute se encargue.
