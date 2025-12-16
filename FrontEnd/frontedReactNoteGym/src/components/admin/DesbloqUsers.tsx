@@ -27,65 +27,95 @@ export default function DesbloqUsers() {
     };
 
     const handleUnlock = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setStatus('loading');
-        setServerMessage("Procesando desbloqueo...");
+    e.preventDefault();
+    setStatus('loading');
+    setServerMessage("Procesando desbloqueo...");
 
-        const { targetUsername, adminUsername, adminPassword } = formData;
+    const { targetUsername, adminUsername, adminPassword } = formData;
 
-        if (!targetUsername || !adminUsername || !adminPassword) {
-            setStatus('error');
-            setServerMessage("Todos los campos son obligatorios.");
-            return;
+    if (!targetUsername || !adminUsername || !adminPassword) {
+        setStatus('error');
+        setServerMessage("Todos los campos son obligatorios.");
+        return;
+    }
+
+    const UNLOCK_URL = `${API_BASE_URL}/api/user/${targetUsername}/desblock`; 
+
+    try {
+        const res = await fetch(UNLOCK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'username': adminUsername, 
+                'password': adminPassword,
+            },
+            body: JSON.stringify({
+                username: adminUsername, 
+                password: adminPassword,
+            })
+        });
+
+        // --- MANEJO DE LA RESPUESTA ---
+        let responseContent = null;
+        let responseText = null;
+        
+        // 1. Intentar leer como JSON
+        // Verificamos si la respuesta no está vacía antes de intentar leer
+        const contentType = res.headers.get('content-type');
+
+        if (contentType && contentType.includes('application/json')) {
+            try {
+                responseContent = await res.json();
+            } catch (e) {
+                // Si el servidor prometió JSON pero falló (ej. JSON mal formado)
+                console.warn("Fallo al parsear JSON, intentando leer como texto.", e);
+            }
+        }
+        
+        // 2. Si no es JSON o falló el parseo, intentar leer como texto (para errores o mensajes simples)
+        if (!responseContent && res.status !== 204 && res.headers.get('content-length') !== '0') {
+             responseText = await res.text();
         }
 
-        // NOTA IMPORTANTE: Esta API debe estar protegida en Spring Boot
-        // para que solo los administradores puedan acceder, y debe verificar
-        // el adminUsername y adminPassword proporcionados.
-        const UNLOCK_URL = `${API_BASE_URL}/api/user/${targetUsername}/desblock`; 
-
-        try {
+        // 3. LÓGICA DE RESPUESTA FINAL
+        if (res.ok) {
+            setStatus('success');
             
-            // 2. Definir el cuerpo de la petición (solo necesitamos el usuario objetivo)
-            const bodyPayload = { 
-                targetUsername: targetUsername 
-            };
+            // Prioridad para el mensaje de éxito:
+            // a) Mensaje del JSON (si existe)
+            // b) Texto plano (si existe)
+            // c) Mensaje predeterminado
+            const successMsg = responseContent?.message || responseText || `Usuario ${targetUsername} desbloqueado correctamente!`;
             
-            const res = await fetch(UNLOCK_URL, {
-                method: 'POST', // O PUT, dependiendo de tu API
-                headers: {
-                    'Content-Type': 'application/json',
-                    // 3. Autenticación del administrador
-                    'username': adminUsername, 
-                    'password': adminPassword,
-                }
+            setServerMessage(successMsg); 
+            
+            // Limpiar campos después del éxito
+            setFormData({
+                targetUsername: "",
+                adminUsername: "",
+                adminPassword: "",
             });
 
-            const data = await res.json();
-
-            if (res.ok) {
-                setStatus('success');
-                setServerMessage(data.message || `Usuario ${targetUsername} desbloqueado correctamente!`);
-                
-                // Opcional: Limpiar los campos después del éxito
-                setFormData({
-                    targetUsername: "",
-                    adminUsername: "",
-                    adminPassword: "",
-                });
-
-            } else {
-                setStatus('error');
-                // Mostrar mensaje de error del servidor o uno genérico
-                setServerMessage(data.message || `Error ${res.status}: Fallo al desbloquear el usuario.`);
-            }
-
-        } catch (error) {
-            console.error(error);
+        } else {
+            // Manejar errores (4xx, 5xx)
             setStatus('error');
-            setServerMessage("Error al conectar con el servidor. Intente más tarde.");
+            
+            // Prioridad para el mensaje de error:
+            // a) Mensaje del JSON (si existe)
+            // b) Texto plano (si existe)
+            // c) Mensaje predeterminado de error
+            const errorMsg = responseContent?.message || responseText || `Error ${res.status}: Fallo al desbloquear el usuario.`;
+            
+            setServerMessage(errorMsg);
         }
-    };
+
+    } catch (error) {
+        // Este catch captura errores de red o la imposibilidad de leer cualquier tipo de respuesta.
+        console.error("Error de conexión:", error);
+        setStatus('error');
+        setServerMessage("Error de red: No se pudo conectar con el servidor.");
+    }
+};
     
     // Función de ayuda para renderizar los mensajes
     const FeedbackMessage = () => {
