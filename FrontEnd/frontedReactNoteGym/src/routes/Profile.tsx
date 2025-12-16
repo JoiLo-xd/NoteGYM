@@ -7,6 +7,8 @@ type UserRole = 'admin' | 'user' | 'trainer';
 
 export default function Profile() {
   const [userRole, setUserRole] = useState<UserRole>('user'); 
+
+  setUserRole(localStorage.getItem('role') as UserRole || 'user');
   return (
     <div className="min-h-screen flex flex-col">
       <HeaderGym />
