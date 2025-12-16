@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -58,7 +59,7 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este email ya esta siendo utilizado");
 
         }
-        
+        newUser.setBlocked(false);
         String pass = passwordEncoder.encode(newUser.getPassword());
         newUser.setPassword(pass);
         newUser.setRole("user");
@@ -102,6 +103,37 @@ public class UserController {
         
         return userWithoutEncript;
     }
+    
+    //Hacer menos redundante
+    @PostMapping("/{username}/desblock")
+    public String postMethodName(@PathVariable String username, @RequestBody LoginJO login) {
+        
+        login.setUsername(login.getUsername().toLowerCase());
+        if (!userRepository.findByUsername(login.getUsername()).isPresent()){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado nigun usuario con ese nombre");
+        }
+        User usuario = userRepository.findByUsername(login.getUsername()).get();
+        if (!passwordEncoder.matches(login.getPassword(), usuario.getPassword())){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La contrasenya no es adecuada"); 
+        }
+
+        if (!usuario.getRole().equals("admin")){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Este usuario no es administrador"); 
+        }
+
+        if (!userRepository.findByUsername(username).isPresent()){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado nigun usuario con ese nombre al que intentas cambiar el estado");
+        }
+    
+        User usuarioDesblok = userRepository.findByUsername(username).get();
+        
+        usuarioDesblok.setBlocked(false);
+        usuarioDesblok.setTriesLogIn(0);
+        userRepository.save(usuarioDesblok);     
+
+        return "Se ha desblockeado el usuario " + usuarioDesblok.getUsername();
+    }
+    
     
 
     

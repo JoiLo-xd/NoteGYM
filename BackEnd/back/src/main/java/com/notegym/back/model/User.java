@@ -32,7 +32,7 @@ public class User {
     )
     private Instant registdate; // El nom a de ser el mateix que en la base de dades.
     private int TriesLogIn;
-    private boolean blocked; 
+    private Boolean blocked; 
 
     
 
