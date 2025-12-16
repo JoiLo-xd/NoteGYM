@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.notegym.back.model.User;
 import com.notegym.back.model.jsonTO.LoginJO;
+import com.notegym.back.model.jsonTO.RegisterJO;
 import com.notegym.back.repo.UserRepository;
 
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -53,7 +54,7 @@ public class UserController {
     @PostMapping("/register")
 
     @ResponseStatus(HttpStatus.CREATED)
-    public String registerUser(@RequestBody User newUser) {
+    public RegisterJO registerUser(@RequestBody User newUser) {
         newUser.setUsername(newUser.getUsername().toLowerCase());
         String username = newUser.getUsername();
         if (userRepository.existsById(username)){
@@ -61,7 +62,7 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este usuario ya esta registrado, no puedes añadirlo");
         }
         else if (userRepository.existsByMail(newUser.getMail())){
-            AUDIT_LOGGER.warn("LOGIN_FAILED: Aquest email ja esta actualitzat: {}", newUser.getUsername());
+            AUDIT_LOGGER.warn("REGISTER_FAILED: Aquest email ja esta utilitzat: {}", newUser.getUsername());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este email ya esta siendo utilizado");
 
         }
@@ -71,10 +72,11 @@ public class UserController {
         newUser.setRole("user");
 
         userRepository.save(newUser);
+        RegisterJO newa = new RegisterJO();
+        newa.setMensaje("Usuario registrado correctamente");
 
 
-
-        return "EL usuario ha sido registrado correctamente";
+        return newa;
     }
 
 
@@ -134,6 +136,11 @@ public class UserController {
         if (!usuario.getRole().equals("admin")){
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: El usuari no es admin: {}", login.getUsername());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Este usuario no es administrador"); 
+        }
+
+        if (!usuario.isBlocked()){
+            AUDIT_LOGGER.warn("DESBLOCK_FAILED: El usuari no esta bloquejat: {}", username);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El usuario admin que intenta desblockear no esta bloquejat");
         }
 
         if (!userRepository.findByUsername(username).isPresent()){

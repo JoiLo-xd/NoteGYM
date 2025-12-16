@@ -24,7 +24,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         
         http
-            // 👈 LÍNEA CRÍTICA: Deshabilita CSRF para APIs REST sin estado
+           
             .csrf(AbstractHttpConfigurer::disable)
             .exceptionHandling(e -> {})
             // Define las reglas de autorización

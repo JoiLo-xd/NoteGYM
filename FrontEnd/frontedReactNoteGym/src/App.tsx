@@ -4,7 +4,7 @@ import LoginUser from "./routes/loginUser";
 import RegisterUser from "./routes/registerUser";
 import ProtectedRoute from './routes/ProtectedRoute';
 import DashboardRoute from './routes/DashboardRoute';
-import Profile from './routes/Profile';
+import Profile from './components/ProfileGym';
 import DesbloqUsers from './components/admin/DesbloqUsers'; 
 import ModUsers from './components/admin/ModUsers';
 

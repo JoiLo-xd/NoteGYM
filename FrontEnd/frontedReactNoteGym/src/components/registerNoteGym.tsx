@@ -3,16 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 
 // 1. FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA
 const validatePassword = (password: string): boolean => {
-    // Criterios:
-    // ^                 # Inicio
-    // (?=.*[0-9])       # Debe contener al menos un dígito (número)
-    // (?=.*[A-Z])       # Debe contener al menos una mayúscula
-    // (?=.*[a-z])       # Debe contener al menos una minúscula
-    // (?=.*[$;._*-])    # Debe contener al menos uno de los símbolos especificados: $ ; . _ - *
-    // .+                # Permite cualquier carácter (cumpliendo los anteriores)
-    // $                 # Fin
-    
-    // NOTA: No se impone una longitud mínima en el regex, solo los caracteres requeridos.
     const passwordRegex = new RegExp("^(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z])(?=.*[$;._*-]).+$");
     
     return passwordRegex.test(password);
@@ -24,15 +14,14 @@ export default function RegisterNoteGym () {
         password: "",
         passwordRep: "",
         name: "",
-        mail: "", // <-- Usando 'mail'
-        sex: ""   // <-- Usando 'sex'
+        mail: "", 
+        sex: ""  
     });
 
     const navigate = useNavigate();
 
     const [status, setStatus] = React.useState("idle"); 
     const [serverMessage, setServerMessage] = React.useState("");
-    // Estado para el mensaje de error de validación de la contraseña
     const [passwordValidationMessage, setPasswordValidationMessage] = React.useState("");
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,6 +77,7 @@ export default function RegisterNoteGym () {
 
             const data = await res.json();
 
+    // Estado para el mensaje de error de validación de la contraseña
             if (res.ok) {
                 setStatus("success");
                 setServerMessage(data.message || "¡Usuario registrado correctamente!");

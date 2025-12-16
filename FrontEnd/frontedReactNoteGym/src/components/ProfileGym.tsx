@@ -8,10 +8,10 @@ interface UserData {
 }
 
 const initialData: UserData = {
-  name: "Juan Pérez García",
-  username: "JuanPGym",
-  email: "juan.perez@notegym.com",
-  sexo: "HOMBRE",
+  name: localStorage.getItem("name") || "Juan Perez",
+  username: localStorage.getItem("username") || "juanperez",
+  email: localStorage.getItem("email") || "juan.perez@notegym.com",
+  sexo: localStorage.getItem("sexo") || "HOMBRE",
 };
 
 export default function ProfileGym() {
