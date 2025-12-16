@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const menuItems = [
+// 1. Definimos los tipos de props que recibirá el componente
+interface SidebarProps {
+    userRole: 'admin' | 'user' | 'trainer';
+}
+
+const baseMenuItems = [
     { name: "Inicio", path: "/dashboard" },
     { name: "Mi Perfil", path: "/profile" },
     { name: "Mis Rutinas", path: "/routines" },
     { name: "Estadísticas", path: "/stats" },
 ];
 
-export default function Sidebar() {
+const adminMenuItems = [
+    { name: "Modificar Usuarios", path: "/admin/users" }
+];
+
+
+export default function Sidebar({ userRole }: SidebarProps) { 
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -19,21 +29,27 @@ export default function Sidebar() {
     const handleLogout = () => {
         localStorage.removeItem('username'); 
         localStorage.removeItem('password'); 
-        
         navigate('/loginUserGym');
     };
 
+    const finalMenuItems = userRole === 'admin' 
+        ? [...baseMenuItems, ...adminMenuItems] 
+        : baseMenuItems;
+
+
     return (
         <>
-            <div className="fixed top-4 left-4 z-50">
+            <div 
+                className={`fixed top-4 left-4 z-50 transition-transform duration-300 ease-in-out 
+                    ${isOpen ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`
+                }
+            >
                 <button onClick={toggleSidebar} className="p-1 bg-[#FF5722] rounded-xl shadow-lg hover:bg-[#F4511E] transition duration-300">
-                    
                     <img
                         src="/logo.jpg" 
                         alt="Abrir Menú"
                         className="h-9 w-9 object-cover rounded-lg" 
                     />
-                    
                 </button>
             </div>
 
@@ -54,7 +70,7 @@ export default function Sidebar() {
                     
                     <nav>
                         <ul className="space-y-4">
-                            {menuItems.map((item) => (
+                            {finalMenuItems.map((item) => (
                                 <li key={item.name}>
                                     <Link 
                                         to={item.path} 
