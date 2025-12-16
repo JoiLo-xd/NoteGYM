@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -25,7 +26,13 @@ public class User {
     private String role;
     private String password;
     @CreationTimestamp
-    private Instant registDate;
+    @Column(
+        name = "registdate",
+        updatable = false
+    )
+    private Instant registdate; // El nom a de ser el mateix que en la base de dades.
+    private int TriesLogIn;
+    private boolean blocked; 
 
     
 
@@ -44,6 +51,22 @@ public class User {
     }
 
 
+
+    public int getTriesLogIn() {
+        return TriesLogIn;
+    }
+
+    public void setTriesLogIn(int triesLogIn) {
+        TriesLogIn = triesLogIn;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
+    }
 
     public String getPassword() {
         return password;
@@ -84,7 +107,7 @@ public class User {
         this.role = role;
     }
     public Instant getRegistDate() {
-        return registDate;
+        return registdate;
     }
 
     
