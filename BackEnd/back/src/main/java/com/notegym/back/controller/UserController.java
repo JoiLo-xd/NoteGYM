@@ -157,6 +157,11 @@ public class UserController {
         return "Se ha desblockeado el usuario " + usuarioDesblok.getUsername();
     }
     
+    @GetMapping("/info")
+    public String getMethodName() {
+        return "Esta es una api de NoteGYM, att:Joel (backend developer)";
+    }
+    
     
 
     
