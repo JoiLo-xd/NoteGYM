@@ -7,8 +7,8 @@ export default function RegisterNoteGym () {
     password: "",
     passwordRep: "",
     name: "",
-    email: "",
-    sexo: ""
+    mail: "",
+    sex: ""
   });
 
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ export default function RegisterNoteGym () {
         }, 1500); 
 
         // Limpiar el formulario
-        setFormData({ username: "", password: "", passwordRep: "", name: "", email: "", sexo: "" });
+        setFormData({ username: "", password: "", passwordRep: "", name: "", mail: "", sex: "" });
       } else {
         setStatus("error");
         setServerMessage(data.message);
@@ -176,7 +176,7 @@ export default function RegisterNoteGym () {
         type="email"
         name="email"
         placeholder="example@gmail.com"
-        value={formData.email}
+        value={formData.mail}
         onChange={handleChange}
         className="w-full bg-transparent border-b border-gray-600 text-black py-2 px-1 focus:outline-none focus:border-[#FF5722] transition-colors placeholder-gray-600"
         required
@@ -191,7 +191,7 @@ export default function RegisterNoteGym () {
             type="radio"
             name="sexo"
             value="HOMBRE"
-            checked={formData.sexo === "HOMBRE"}
+            checked={formData.sex === "HOMBRE"}
             onChange={handleChange}
             className="appearance-none w-4 h-4 border border-gray-500 rounded-full checked:bg-[#FF5722] checked:border-[#FF5722] transition-colors focus:ring-1 focus:ring-[#FF5722] ring-offset-0 bg-[#2b2b2b]"
             required
@@ -204,7 +204,7 @@ export default function RegisterNoteGym () {
             type="radio"
             name="sexo"
             value="MUJER"
-            checked={formData.sexo === "MUJER"}
+            checked={formData.sex === "MUJER"}
             onChange={handleChange}
             className="appearance-none w-4 h-4 border border-gray-500 rounded-full checked:bg-[#FF5722] checked:border-[#FF5722] transition-colors focus:ring-1 focus:ring-[#FF5722] ring-offset-0 bg-[#2b2b2b]"
             required
