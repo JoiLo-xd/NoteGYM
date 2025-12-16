@@ -61,6 +61,7 @@ public class UserController {
         
         String pass = passwordEncoder.encode(newUser.getPassword());
         newUser.setPassword(pass);
+        newUser.setRole("user");
 
         userRepository.save(newUser);
 
@@ -76,13 +77,27 @@ public class UserController {
         login.setUsername(login.getUsername().toLowerCase());
         if (!userRepository.findByUsername(login.getUsername()).isPresent()){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado nigun usuario con ese nombre");
-        }
+        }   
+
         User usuario = userRepository.findByUsername(login.getUsername()).get();
         User userWithoutEncript = usuario;
+        if (usuario.isBlocked()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Aquest usuari esta bloquejat"); 
+
+        }
 
         if (!passwordEncoder.matches(login.getPassword(), usuario.getPassword())){
+            usuario.setTriesLogIn(usuario.getTriesLogIn() + 1);
+            if (usuario.getTriesLogIn() == 3){
+                usuario.setBlocked( true);
+                userRepository.save(usuario);
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La contrasenya no es adecuada, ja has intentat els 3 intents, el compte " + usuario.getUsername() + " ha quedat bloqueixat"); 
+            }
+            userRepository.save(usuario);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La contrasenya no es adecuada"); 
         }
+        usuario.setTriesLogIn(0);
+        userRepository.save(usuario);
         userWithoutEncript.setPassword(login.getPassword());
         
         return userWithoutEncript;
