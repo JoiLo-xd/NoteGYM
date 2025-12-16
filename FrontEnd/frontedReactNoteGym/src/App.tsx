@@ -2,8 +2,8 @@ import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginUser from "./routes/loginUser";
 import RegisterUser from "./routes/registerUser";
-import DashboardGym from './components/dashboardGym.tsx';
-import ProtectedRoute from './routes/ProtectedRoute.tsx';
+import ProtectedRoute from './routes/ProtectedRoute';
+import DashboardRoute from './routes/DashboardRoute';
 
 
 function App() {
@@ -15,7 +15,7 @@ function App() {
                 <Route path="/" element={<LoginUser />} />
 
                 <Route path="/dashboard" element={
-                    <DashboardGym />
+                    <DashboardRoute />
                     
                 } 
         />
