@@ -4,7 +4,7 @@ import LoginUser from "./routes/loginUser";
 import RegisterUser from "./routes/registerUser";
 import ProtectedRoute from './routes/ProtectedRoute';
 import DashboardRoute from './routes/DashboardRoute';
-import ProfileGym from './components/ProfileGym';
+import Profile from './routes/Profile';
 
 
 function App() {
@@ -16,7 +16,7 @@ function App() {
                 <Route path="/" element={<LoginUser />} />
 
                 <Route path="/dashboard" element={<DashboardRoute />} />
-                <Route path='/profile' element={<ProfileGym />} />
+                <Route path='/profile' element={<Profile />} />
             </Routes>
 
         </BrowserRouter>
