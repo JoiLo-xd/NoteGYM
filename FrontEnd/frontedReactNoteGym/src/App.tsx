@@ -5,6 +5,8 @@ import RegisterUser from "./routes/registerUser";
 import ProtectedRoute from './routes/ProtectedRoute';
 import DashboardRoute from './routes/DashboardRoute';
 import Profile from './routes/Profile';
+import DesbloqUsers from './components/admin/DesbloqUsers'; 
+import ModUsers from './components/admin/ModUsers';
 
 
 function App() {
@@ -17,6 +19,9 @@ function App() {
 
                 <Route path="/dashboard" element={<DashboardRoute />} />
                 <Route path='/profile' element={<Profile />} />
+
+                <Route path="/admin/ModUsers" element={<ModUsers />} />
+                <Route path="/DesbloquearUsers" element={<DesbloqUsers />} />
             </Routes>
 
         </BrowserRouter>

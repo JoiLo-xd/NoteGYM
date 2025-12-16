@@ -1,0 +1,187 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = "http://localhost:8080"; 
+
+export default function DesbloqUsers() {
+    const [formData, setFormData] = useState({
+        targetUsername: "", // El usuario a desbloquear
+        adminUsername: "",  // Credencial del administrador
+        adminPassword: "",  // Credencial del administrador
+    });
+    
+    // Estado para feedback
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [serverMessage, setServerMessage] = useState("");
+    
+    const navigate = useNavigate();
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+        // Limpiamos mensajes al editar
+        setStatus('idle');
+        setServerMessage('');
+    };
+
+    const handleUnlock = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setStatus('loading');
+        setServerMessage("Procesando desbloqueo...");
+
+        const { targetUsername, adminUsername, adminPassword } = formData;
+
+        if (!targetUsername || !adminUsername || !adminPassword) {
+            setStatus('error');
+            setServerMessage("Todos los campos son obligatorios.");
+            return;
+        }
+
+        // NOTA IMPORTANTE: Esta API debe estar protegida en Spring Boot
+        // para que solo los administradores puedan acceder, y debe verificar
+        // el adminUsername y adminPassword proporcionados.
+        const UNLOCK_URL = `${API_BASE_URL}/api/user/${targetUsername}/desblock`; 
+
+        try {
+            
+            // 2. Definir el cuerpo de la petición (solo necesitamos el usuario objetivo)
+            const bodyPayload = { 
+                targetUsername: targetUsername 
+            };
+            
+            const res = await fetch(UNLOCK_URL, {
+                method: 'POST', // O PUT, dependiendo de tu API
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 3. Autenticación del administrador
+                    'username': adminUsername, 
+                    'password': adminPassword,
+                }
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setStatus('success');
+                setServerMessage(data.message || `Usuario ${targetUsername} desbloqueado correctamente!`);
+                
+                // Opcional: Limpiar los campos después del éxito
+                setFormData({
+                    targetUsername: "",
+                    adminUsername: "",
+                    adminPassword: "",
+                });
+
+            } else {
+                setStatus('error');
+                // Mostrar mensaje de error del servidor o uno genérico
+                setServerMessage(data.message || `Error ${res.status}: Fallo al desbloquear el usuario.`);
+            }
+
+        } catch (error) {
+            console.error(error);
+            setStatus('error');
+            setServerMessage("Error al conectar con el servidor. Intente más tarde.");
+        }
+    };
+    
+    // Función de ayuda para renderizar los mensajes
+    const FeedbackMessage = () => {
+        if (status === 'idle') return null;
+        
+        const baseClass = "p-3 rounded-lg text-sm text-center font-medium my-4 shadow-sm";
+        const successClass = "bg-green-100 border border-green-400 text-green-700";
+        const errorClass = "bg-red-100 border border-red-400 text-red-700 animate-pulse";
+        
+        return (
+            <div className={`${baseClass} ${status === 'success' ? successClass : errorClass}`}>
+                {serverMessage}
+            </div>
+        );
+    };
+
+    return (
+        <div className="w-full max-w-md mx-auto mt-20 p-8 bg-white rounded-xl shadow-2xl border border-gray-200">
+            
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-3 text-[#FF5722]">
+                Desbloquear Usuario
+            </h2>
+
+            <FeedbackMessage />
+
+            <form onSubmit={handleUnlock} className="space-y-6">
+                
+                {/* 1. Usuario a Desbloquear */}
+                <div className="flex flex-col">
+                    <label htmlFor="targetUsername" className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre de Usuario a Desbloquear
+                    </label>
+                    <input
+                        type="text"
+                        name="targetUsername"
+                        id="targetUsername"
+                        placeholder="target Username"
+                        value={formData.targetUsername}
+                        onChange={handleChange}
+                        className="w-full bg-transparent border-b border-gray-400 text-gray-800 py-2 px-1 focus:outline-none focus:border-[#FF5722] transition-colors placeholder-gray-500"
+                        required
+                    />
+                </div>
+
+                <div className="border-t pt-6 mt-6 space-y-4">
+                    <p className="text-sm font-semibold text-gray-600">
+                        Confirmación de Administrador
+                    </p>
+                    
+                    {/* 2. Username del Administrador */}
+                    <div className="flex flex-col">
+                        <label htmlFor="adminUsername" className="block text-sm font-medium text-gray-700 mb-2">
+                            Tu Username (Admin)
+                        </label>
+                        <input
+                            type="text"
+                            name="adminUsername"
+                            id="adminUsername"
+                            placeholder="Tu Username (Admin)"
+                            value={formData.adminUsername}
+                            onChange={handleChange}
+                            className="w-full bg-transparent border-b border-gray-400 text-gray-800 py-2 px-1 focus:outline-none focus:border-[#FF5722] transition-colors placeholder-gray-500"
+                            required
+                        />
+                    </div>
+
+                    {/* 3. Password del Administrador */}
+                    <div className="flex flex-col">
+                        <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                            Tu Password (Admin)
+                        </label>
+                        <input
+                            type="password"
+                            name="adminPassword"
+                            id="adminPassword"
+                            placeholder="Password"
+                            value={formData.adminPassword}
+                            onChange={handleChange}
+                            className="w-full bg-transparent border-b border-gray-400 text-gray-800 py-2 px-1 focus:outline-none focus:border-[#FF5722] transition-colors placeholder-gray-500"
+                            required
+                        />
+                    </div>
+                </div>
+
+                {/* Botón de Desbloquear */}
+                <button
+                    type="submit"
+                    className={`w-full mt-6 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold py-3 rounded-xl shadow-[0_4px_14px_0_rgba(255,87,34,0.39)] transition-all duration-200 
+                        ${status === 'loading' ? 'opacity-70 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                    disabled={status === 'loading'}
+                >
+                    {status === 'loading' ? "Desbloqueando..." : "Desbloquear Cuenta"}
+                </button>
+
+            </form>
+            
+        </div>
+    );
+}
