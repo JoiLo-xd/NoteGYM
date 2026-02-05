@@ -106,7 +106,7 @@ export default function RegisterNoteGym () {
     return (
         
         <form 
-            className="formRegister w-full max-w-md p-8 rounded-3xl shadow-2xl border border-gray-800 mx-auto" 
+            className="formRegister w-full max-w-md rounded-3xl shadow-2xl border border-gray-800 mx-auto" 
             onSubmit={handleSubmit}
         >
             <h2 className="text-4xl font-bold text-center mb-8 text-black tracking-tight">

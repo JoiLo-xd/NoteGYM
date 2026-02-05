@@ -1,10 +1,8 @@
 #root {
-  flex-direction: column;
-  background: linear-gradient(180deg, #000000, #ff7a00);
+  min-height: 100vh;
   background-image: url("../fondo.png");
-  gap: 2rem;
-  padding: 2rem;
-
+  background-repeat: repeat;
+  background-position: top left;
 }
 
 .bodyRegister {
@@ -28,21 +26,7 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.header {
-  background-color: #0C0C0C;
-  background-size: cover;
-  background-position: center;
-  background-size: 95%;
-  width: calc(100% + 4rem);
-  margin: -2rem -2rem 0; 
-  padding: 1rem 2rem;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative; 
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
+
 
 
 .logo {
