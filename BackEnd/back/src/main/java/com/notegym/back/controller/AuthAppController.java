@@ -29,9 +29,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:5173")
-public class UserController {
+public class AuthAppController {
 
 
     private UserRepository userRepository;
@@ -40,7 +40,7 @@ public class UserController {
     private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("com.notegym.back.auditor");
 
 
-    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder){
+    public AuthAppController(UserRepository userRepository, PasswordEncoder passwordEncoder){
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -91,11 +91,12 @@ public class UserController {
 
         User usuario = userRepository.findByUsername(login.getUsername()).get();
         User userWithoutEncript = usuario;
+        /* 
         if (usuario.isBlocked()){
             AUDIT_LOGGER.warn("LOGIN_FAILED: Este usuari esta bloquejat: {}", login.getUsername());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Aquest usuari esta bloquejat"); 
 
-        }
+        }*/
 
         if (!passwordEncoder.matches(login.getPassword(), usuario.getPassword())){
             usuario.setTriesLogIn(usuario.getTriesLogIn() + 1);
@@ -137,11 +138,12 @@ public class UserController {
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: El usuari no es admin: {}", login.getUsername());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Este usuario no es administrador"); 
         }
-
+        /* 
         if (!usuario.isBlocked()){
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: El usuari no esta bloquejat: {}", username);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El usuario admin que intenta desblockear no esta bloquejat");
         }
+            */
 
         if (!userRepository.findByUsername(username).isPresent()){
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: No es troba ningun usuari amb aquest nom per cambiar l'estat: {}", login.getUsername());
@@ -161,6 +163,8 @@ public class UserController {
     public String getMethodName() {
         return "Esta es una api de NoteGYM, att:Joel (backend developer)";
     }
+    
+
     
     
 
