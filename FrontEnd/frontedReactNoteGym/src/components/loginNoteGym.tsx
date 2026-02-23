@@ -43,7 +43,23 @@ export default function LoginNoteGym() {
     setErrors({});
     setStatus("loading");
     setServerMessage("");
+
+    // --- BLOQUE PARA PRUEBAS (BYPASS) ---
+    // Esto hace que entres directo sin llamar al backend
+    setTimeout(() => {
+      setStatus("success");
+      setServerMessage("¡Modo prueba activo! Entrando...");
+      
+      // Seteamos datos manuales para que el resto de la web no de error
+      localStorage.setItem('token', 'token-de-prueba');
+      localStorage.setItem('username', formData.username || 'Admin');
+      localStorage.setItem('role', 'ADMIN');
+
+      navigate('/dashboard'); 
+    }, 1000);
+    // --- FIN BLOQUE PRUEBAS ---
     
+    /* COMENTAMOS TU LÓGICA ORIGINAL PARA QUE NO SE EJECUTE
     try {
       const LOGIN_URL = API_BASE_URL + "/api/user/login";
 
@@ -92,6 +108,7 @@ export default function LoginNoteGym() {
       setServerMessage("Error de conexión con el servidor. Inténtalo de nuevo.");
       setErrors({ global: "Error de conexión con el servidor." }); 
     }
+    */
   };
 
   return (

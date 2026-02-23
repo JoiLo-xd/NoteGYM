@@ -1,16 +1,35 @@
-import React from "react";
-import CalendarWidget from "./CalendarWidget";
+import { useSnack } from "@/components/SnackProvider";
+import { ContinuousCalendar } from "@/components/ContinuousCalendar";
 
 interface DashboardGymProps {
   userRole: "admin" | "user" | "trainer";
   userName: string;
 }
 
-export default function DashboardGym({ userRole, userName }: DashboardGymProps) {
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+
+export default function DashboardGym({ userRole: propsRole, userName: propsName }: DashboardGymProps) {
+
+  // --- LÓGICA DE RESCATE (Para que no se quede en blanco) ---
+  // 1. Prioridad: Lo que viene por props
+  // 2. Segunda opción: Lo que guardamos en el login (localStorage)
+  // 3. Tercera opción: Valores genéricos para que veas la interfaz
+  const userName = propsName || localStorage.getItem('username') || "Usuario de Prueba";
+  const userRole = propsRole || (localStorage.getItem('role') as any) || "admin";
+
+
   const welcomeMessage = `👋 Bienvenid@ ${userName}`;
 
+
+  //const { createSnack } = useSnack();
+  //const onClickHandler = (day: number, month: number, year: number) => {
+  //  const snackMessage = `Clicked on ${monthNames[month]} ${day}, ${year}`
+  //  createSnack(snackMessage, 'success');
+  //};
+
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-6x2">
       <div className="bg-white/95 p-8 rounded-2xl shadow-2xl border border-gray-200">
         {/* Header */}
         <div className="flex flex-col gap-3 items-center text-center">
@@ -36,13 +55,18 @@ export default function DashboardGym({ userRole, userName }: DashboardGymProps) 
 
         {/* Main grid */}
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+
+
           {/* Calendario */}
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-semibold text-[#FF5722] mb-4">
               Tu calendario de entrenamiento
             </h2>
-            <CalendarWidget />
+            <ContinuousCalendar  />
           </div>
+
+          
 
           {/* Panel del día (placeholder bonito, sin inventar backend) */}
           <div className="lg:col-span-1">
