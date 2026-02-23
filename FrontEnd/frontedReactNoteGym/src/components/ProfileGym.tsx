@@ -8,10 +8,10 @@ interface UserData {
 }
 
 const initialData: UserData = {
-  name: localStorage.getItem("name") || "Juan Perez",
-  username: localStorage.getItem("username") || "juanperez",
-  email: localStorage.getItem("email") || "juan.perez@notegym.com",
-  sexo: localStorage.getItem("sexo") || "HOMBRE",
+  name: localStorage.getItem("name") || "",
+  username: localStorage.getItem("username") || "",
+  email: localStorage.getItem("email") || "",
+  sexo: localStorage.getItem("sexo") || "",
 };
 
 export default function ProfileGym() {
@@ -24,9 +24,11 @@ export default function ProfileGym() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  useEffect(() => {
-    // si cargas del backend: setFormData(data); setOriginalData(data);
-  }, []);
+  //  useEffect(() => {
+  //    // si cargas del backend: 
+  //    setFormData(initialData);
+  //    setOriginalData(initialData);
+  //  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

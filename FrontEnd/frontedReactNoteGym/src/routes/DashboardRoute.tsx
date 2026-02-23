@@ -69,7 +69,7 @@ export default function DashboardRoute() {
             
             <Sidebar userRole={userRole} /> 
             
-            <main className="flex-grow flex items-center justify-center p-4">
+            <main className="flex-grow pt-24 px-6 pb-10">
                 <DashboardGym userRole={userRole} userName={userName} /> 
             </main>
         </div>

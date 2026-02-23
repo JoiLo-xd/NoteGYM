@@ -63,7 +63,7 @@ export default function LoginNoteGym() {
         setStatus("success");
         setServerMessage(data.message || "¡Inicio de sesión exitoso!");
         // Aquí debes guardar el token de autenticación (JWT) si lo hay
-        //localStorage.setItem('token', data.token);
+        localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.username);
         localStorage.setItem('password', data.password);
         localStorage.setItem('name', data.name);
