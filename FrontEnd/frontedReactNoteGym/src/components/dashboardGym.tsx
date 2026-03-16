@@ -126,6 +126,38 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     // Si la fecha coincide con la que tienes abierta en el panel del día, forzamos un rerender de los valores pero ya se ven por setNotes
   };
 
+  const handleDeleteNote = (dateKeyParam: string, noteId: string) => {
+    if (!notes[dateKeyParam]) return;
+    
+    if (!window.confirm("¿Seguro que quieres eliminar esta nota?")) return;
+
+    const updatedNotesList = notes[dateKeyParam].filter(note => note.id !== noteId);
+    
+    const updatedNotes = {
+      ...notes,
+      [dateKeyParam]: updatedNotesList
+    };
+    
+    setNotes(updatedNotes);
+    localStorage.setItem('user_notes', JSON.stringify(updatedNotes));
+  };
+
+  const handleRemoveRoutine = (dateKeyParam: string, routineIndex: number) => {
+    if (!assignedRoutines[dateKeyParam]) return;
+
+    if (!window.confirm("¿Quitar esta rutina del día seleccionado?")) return;
+    
+    const updatedRoutinesList = assignedRoutines[dateKeyParam].filter((_, idx) => idx !== routineIndex);
+    
+    const updatedRoutines = {
+      ...assignedRoutines,
+      [dateKeyParam]: updatedRoutinesList
+    };
+    
+    setAssignedRoutines(updatedRoutines);
+    localStorage.setItem('user_assigned_routines', JSON.stringify(updatedRoutines));
+  };
+
   return (
     <div className="mx-auto w-full max-w-6x2">
       <div className="bg-white/95 p-8 rounded-2xl shadow-2xl border border-gray-200">
@@ -205,9 +237,16 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
                       {assignedRoutines[dateKey] && assignedRoutines[dateKey].length > 0 ? (
                         <div className="space-y-2">
                           {assignedRoutines[dateKey].map((rutina, idx) => (
-                            <div key={idx} className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                            <div key={idx} className="group bg-white p-3 rounded-lg border border-blue-100 shadow-sm relative pr-10">
                               <p className="text-blue-600 font-bold text-sm mb-1">{rutina.name}</p>
                               <p className="text-gray-500 text-xs">{rutina.exercises && rutina.exercises.length} ejercicios</p>
+                              <button
+                                onClick={() => handleRemoveRoutine(dateKey, idx)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#FF5722] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-50"
+                                title="Quitar rutina de este día"
+                              >
+                                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -230,10 +269,22 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
                           {currentNotes.map(note => (
                             <details key={note.id} className="group bg-gray-50 rounded-lg border border-gray-200 overflow-hidden text-sm transition-all shadow-sm">
                               <summary className="font-semibold text-gray-800 cursor-pointer p-3 hover:bg-gray-100 transition flex items-center justify-between">
-                                {note.title}
-                                <span className="opacity-50 group-open:rotate-180 transition-transform">▼</span>
+                                <span className="flex-1 truncate pr-2">{note.title}</span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleDeleteNote(dateKey, note.id);
+                                    }}
+                                    className="text-[#FF5722] hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                                    title="Eliminar nota"
+                                  >
+                                    <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  </button>
+                                  <span className="opacity-50 group-open:rotate-180 transition-transform pl-1">▼</span>
+                                </div>
                               </summary>
-                              <div className="p-3 text-gray-600 border-t border-gray-200 bg-white leading-relaxed">
+                              <div className="p-3 text-gray-600 border-t border-gray-200 bg-white leading-relaxed whitespace-pre-wrap">
                                 {note.body}
                               </div>
                             </details>
