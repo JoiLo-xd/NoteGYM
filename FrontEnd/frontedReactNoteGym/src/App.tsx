@@ -7,6 +7,7 @@ import DashboardRoute from './routes/DashboardRoute';
 import Profile from './components/ProfileGym';
 import DesbloqUsers from './components/admin/DesbloqUsers'; 
 import ModUsers from './components/admin/ModUsers';
+import RoutinesPage from './components/RoutinesPage';
 
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
 
                 <Route path="/dashboard" element={<DashboardRoute />} />
                 <Route path='/profile' element={<Profile />} />
+                <Route path='/rutinas' element={<RoutinesPage />} />
 
                 <Route path="/admin/ModUsers" element={<ModUsers />} />
                 <Route path="/DesbloquearUsers" element={<DesbloqUsers />} />

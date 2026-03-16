@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 // import { useSnack } from "@/components/SnackProvider"; // Retenido pero comentado en caso de usar notificaciones después
 import { ContinuousCalendar } from "@/components/ContinuousCalendar";
 
@@ -28,6 +29,18 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
   // Estados del panel de día
   const [selectedDate, setSelectedDate] = useState<{ day: number; month: number; year: number } | null>(null);
   const [notes, setNotes] = useState<Record<string, Note[]>>({});
+  const [assignedRoutines, setAssignedRoutines] = useState<Record<string, any[]>>({});
+  
+  const navigate = useNavigate();
+
+  // Cargar datos de localStorage al montar
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('user_notes');
+    if (savedNotes) setNotes(JSON.parse(savedNotes));
+
+    const savedRoutines = localStorage.getItem('user_assigned_routines');
+    if (savedRoutines) setAssignedRoutines(JSON.parse(savedRoutines));
+  }, []);
 
   // Estados para creación de nueva nota
   const [isCreatingNote, setIsCreatingNote] = useState(false);
@@ -66,10 +79,13 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
       body: noteBody,
     };
 
-    setNotes(prev => ({
-      ...prev,
-      [dateKey]: [...(prev[dateKey] || []), newNote]
-    }));
+    const updatedNotes = {
+      ...notes,
+      [dateKey]: [...(notes[dateKey] || []), newNote]
+    };
+    
+    setNotes(updatedNotes);
+    localStorage.setItem('user_notes', JSON.stringify(updatedNotes));
 
     setIsCreatingNote(false);
     setNoteTitle("");
@@ -93,10 +109,13 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
       body: quickNoteBody,
     };
 
-    setNotes(prev => ({
-      ...prev,
-      [key]: [...(prev[key] || []), newNote]
-    }));
+    const updatedNotes = {
+      ...notes,
+      [key]: [...(notes[key] || []), newNote]
+    };
+
+    setNotes(updatedNotes);
+    localStorage.setItem('user_notes', JSON.stringify(updatedNotes));
 
     // Cerrar y resetear
     setIsQuickNoteModalOpen(false);
@@ -128,10 +147,10 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
             >
               + Crear nota rápida
             </button>
-            <button className="px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition">
-              Asignar rutina
-            </button>
-            <button className="px-5 py-3 rounded-xl bg-white border border-gray-300 text-gray-800 font-semibold hover:bg-gray-50 transition">
+            <button 
+              onClick={() => navigate('/rutinas')}
+              className="px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition shadow-md hover:-translate-y-0.5"
+            >
               Ver rutinas
             </button>
           </div>
@@ -145,7 +164,22 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
             <h2 className="text-2xl font-semibold text-[#FF5722] mb-4 text-center">
               Tu calendario de entrenamiento
             </h2>
-            <ContinuousCalendar onClick={handleDateClick} />
+            <ContinuousCalendar 
+              onClick={handleDateClick} 
+              dotsMap={useMemo(() => {
+                const map: Record<string, { hasNote: boolean; hasRoutine: boolean }> = {};
+                Object.keys(notes).forEach(k => {
+                  if (notes[k].length > 0) map[k] = { hasNote: true, hasRoutine: false };
+                });
+                Object.keys(assignedRoutines).forEach(k => {
+                  if (assignedRoutines[k].length > 0) {
+                    if (!map[k]) map[k] = { hasNote: false, hasRoutine: true };
+                    else map[k].hasRoutine = true;
+                  }
+                });
+                return map;
+              }, [notes, assignedRoutines])}
+            />
           </div>
 
           {/* Panel del día */}
@@ -168,9 +202,20 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
                   <div className="space-y-4">
                     <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
                       <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Rutina Asignada</p>
-                      <p className="text-gray-700 font-medium text-sm">
-                        Ninguna rutina asignada.
-                      </p>
+                      {assignedRoutines[dateKey] && assignedRoutines[dateKey].length > 0 ? (
+                        <div className="space-y-2">
+                          {assignedRoutines[dateKey].map((rutina, idx) => (
+                            <div key={idx} className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                              <p className="text-blue-600 font-bold text-sm mb-1">{rutina.name}</p>
+                              <p className="text-gray-500 text-xs">{rutina.exercises && rutina.exercises.length} ejercicios</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-700 font-medium text-sm">
+                          Ninguna rutina asignada.
+                        </p>
+                      )}
                     </div>
 
                     <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">

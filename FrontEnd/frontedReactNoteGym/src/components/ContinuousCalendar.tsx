@@ -8,9 +8,10 @@ const monthNames = [
 
 interface CalendarProps {
   onClick?: (_day: number, _month: number, _year: number, _createNote?: boolean) => void;
+  dotsMap?: Record<string, { hasNote: boolean; hasRoutine: boolean }>;
 }
 
-export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick }) => {
+export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick, dotsMap = {} }) => {
   const today = new Date();
 
   // Guardamos el mes y año que estamos visualizando
@@ -97,7 +98,7 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick }) => {
           <div className="flex items-center gap-1 sm:gap-3 bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100/80">
             <button
               onClick={handlePrevMonth}
-              className="p-1.5 sm:p-2 text-gray-400 hover:text-[#FF5722] hover:bg-white rounded-xl transition-all shadow-sm hover:shadow"
+              className="p-1.5 sm:p-2 text-[#FF5722] hover:bg-white rounded-xl transition-all shadow-sm hover:shadow"
             >
               <svg className="size-4 sm:size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -106,7 +107,7 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick }) => {
             </h2>
             <button
               onClick={handleNextMonth}
-              className="p-1.5 sm:p-2 text-gray-400 hover:text-[#FF5722] hover:bg-white rounded-xl transition-all shadow-sm hover:shadow"
+              className="p-1.5 sm:p-2 text-[#FF5722] hover:bg-white rounded-xl transition-all shadow-sm hover:shadow"
             >
               <svg className="size-4 sm:size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
             </button>
@@ -162,6 +163,16 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick }) => {
                 >
                   {cell.day}
                 </span>
+
+                {/* Puntitos de indicadores */}
+                <div className="absolute left-1.5 bottom-1.5 flex gap-1">
+                  {dotsMap[`${cell.year}-${finalMonth}-${cell.day}`]?.hasRoutine && (
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-400 max-w-full shadow-sm" title="Tiene rutina asignada"></div>
+                  )}
+                  {dotsMap[`${cell.year}-${finalMonth}-${cell.day}`]?.hasNote && (
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#FF5722] shadow-sm" title="Tiene notas"></div>
+                  )}
+                </div>
 
                 {/* Botón de añadir (Icono naranja en la esquina derecha, visible al hacer hover) */}
                 {cell.isCurrentMonth && (
