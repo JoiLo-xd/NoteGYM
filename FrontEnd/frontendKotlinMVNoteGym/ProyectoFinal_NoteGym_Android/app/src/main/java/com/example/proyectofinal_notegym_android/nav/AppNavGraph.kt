@@ -16,6 +16,7 @@ import com.example.proyectofinal_notegym_android.ui.dashboard.DashboardView
 import com.example.proyectofinal_notegym_android.ui.login.LoginView
 import com.example.proyectofinal_notegym_android.ui.login.LoginViewModel
 import com.example.proyectofinal_notegym_android.ui.login.LoginViewModelFactory
+import com.example.proyectofinal_notegym_android.ui.profile.ProfileView
 import com.example.proyectofinal_notegym_android.ui.register.RegisterView
 import com.example.proyectofinal_notegym_android.ui.register.RegisterViewModel
 import com.example.proyectofinal_notegym_android.ui.register.RegisterViewModelFactory
@@ -93,7 +94,25 @@ fun AppNavGraph(
                             popUpTo(NavRoutes.Dashboard.route) { inclusive = true }
                         }
                     }
+                },
+                onGoProfile = {
+                    navController.navigate(NavRoutes.Profile.route)
                 }
+            )
+        }
+
+        composable(NavRoutes.Profile.route) {
+            val context = LocalContext.current
+            val authStore = remember { AuthStore(context) }
+            val usernameState = remember { mutableStateOf("") }
+
+            LaunchedEffect(Unit) {
+                usernameState.value = authStore.getUsername()
+            }
+
+            ProfileView(
+                username = usernameState.value,
+                onBack = { navController.popBackStack() }
             )
         }
     }

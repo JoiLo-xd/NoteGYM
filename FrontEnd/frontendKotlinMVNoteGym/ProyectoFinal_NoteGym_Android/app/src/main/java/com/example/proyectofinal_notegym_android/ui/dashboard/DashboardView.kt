@@ -4,48 +4,60 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.proyectofinal_notegym_android.data.Note
 import com.example.proyectofinal_notegym_android.ui.components.HeaderGymBar
-import com.example.proyectofinal_notegym_android.ui.dashboard.components.CalendarWidget
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 // DashboardView es la pantalla principal interna.
 // Aquí montamos: header fijo + contenido con scroll.
 @Composable
 fun DashboardView(
     username: String,        // Nombre leído desde AuthStore (DataStore)
-    onLogout: () -> Unit     // Acción de cerrar sesión (la define AppNavGraph)
+    onLogout: () -> Unit,    // Acción de cerrar sesión (la define AppNavGraph)
+    onGoProfile: () -> Unit  // Acción para ir al perfil
 ) {
     Scaffold(
         // Barra superior fija reutilizable.
@@ -53,8 +65,7 @@ fun DashboardView(
             HeaderGymBar(
                 title = "Dashboard",
                 userName = username,
-                onMenuClick = { },     // Sidebar lo dejamos parado por ahora
-                onProfileClick = { }   // Perfil lo conectaremos cuando exista esa pantalla
+                onProfileClick = onGoProfile
             )
         }
     ) { paddingValues: PaddingValues ->
@@ -66,7 +77,8 @@ fun DashboardView(
                 .fillMaxSize()
                 .padding(paddingValues),
             username = username,
-            onLogout = onLogout
+            onLogout = onLogout,
+            onGoProfile = onGoProfile
         )
     }
 }
@@ -76,13 +88,19 @@ fun DashboardView(
 private fun DashboardScreenContent(
     modifier: Modifier = Modifier,
     username: String,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onGoProfile: () -> Unit
 ) {
     val scrollState = rememberScrollState()
 
-    // selectedDay = día seleccionado en el calendario.
-    // 0 significa "ninguno seleccionado".
-    val selectedDayState = remember { mutableIntStateOf(0) }
+    val currentDateState = remember { mutableStateOf(LocalDate.now()) }
+    
+    // Lista de notas persistente en esta sesión (temporal)
+    val notes = remember { mutableStateListOf<Note>() }
+    
+    // Estado para los diálogos
+    var showAddNoteDialog by remember { mutableStateOf(false) }
+    var selectedNote by remember { mutableStateOf<Note?>(null) }
 
     Column(
         modifier = modifier
@@ -94,28 +112,27 @@ private fun DashboardScreenContent(
         // Card 1: bienvenida.
         WelcomeCard(username = username)
 
-        // Card 2: acciones rápidas (solo UI por ahora).
+        // Card 2: acciones rápidas.
         QuickActionsCard(
-            onCreateNote = { },
+            onCreateNote = { showAddNoteDialog = true },
             onAssignRoutine = { },
             onViewRoutines = { }
         )
 
-        // Card 3: calendario (misma idea que React, adaptado a móvil).
-        CalendarCard(
-            selectedDay = selectedDayState.intValue,
-            onDaySelected = { day -> selectedDayState.intValue = day }
-        )
-
-        // Card 4: panel del día (por ahora placeholder).
-        SelectedDayCard(
-            selectedDay = selectedDayState.intValue,
-            onCreateNote = { }
+        // Card 3: Bandeja del día (notas y rutinas)
+        DailyInboxCard(
+            currentDate = currentDateState.value,
+            notes = notes.filter { it.createdAt == currentDateState.value },
+            onPreviousDay = { currentDateState.value = currentDateState.value.minusDays(1) },
+            onNextDay = { currentDateState.value = currentDateState.value.plusDays(1) },
+            onCreateNote = { showAddNoteDialog = true },
+            onAssignRoutine = { },
+            onNoteClick = { selectedNote = it }
         )
 
         // Cards inferiores (accesos rápidos).
         QuickSectionsCard(
-            onGoProfile = { },
+            onGoProfile = onGoProfile,
             onGoTraining = { },
             onGoStats = { }
         )
@@ -128,6 +145,141 @@ private fun DashboardScreenContent(
             Text("Cerrar sesión")
         }
     }
+
+    // Diálogo para crear nota
+    if (showAddNoteDialog) {
+        AddNoteDialog(
+            onDismiss = { showAddNoteDialog = false },
+            onSave = { title, body ->
+                notes.add(Note(title = title, body = body, createdAt = currentDateState.value))
+                showAddNoteDialog = false
+            }
+        )
+    }
+
+    // Diálogo para ver/editar/borrar nota
+    selectedNote?.let { note ->
+        EditNoteDialog(
+            note = note,
+            onDismiss = { selectedNote = null },
+            onSave = { newTitle, newBody ->
+                val index = notes.indexOf(note)
+                if (index != -1) {
+                    notes[index] = note.copy(title = newTitle, body = newBody)
+                }
+                selectedNote = null
+            },
+            onDelete = {
+                notes.remove(note)
+                selectedNote = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun AddNoteDialog(
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nueva Nota") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Título") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextField(
+                    value = body,
+                    onValueChange = { body = it },
+                    label = { Text("Contenido") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (title.isNotBlank()) onSave(title, body) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+private fun EditNoteDialog(
+    note: Note,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit,
+    onDelete: () -> Unit
+) {
+    var title by remember { mutableStateOf(note.title) }
+    var body by remember { mutableStateOf(note.body) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Detalles de la Nota")
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Borrar nota",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Título") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextField(
+                    value = body,
+                    onValueChange = { body = it },
+                    label = { Text("Contenido") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 5
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (title.isNotBlank()) onSave(title, body) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("Actualizar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cerrar")
+            }
+        }
+    )
 }
 
 // Card de bienvenida con estilo app (limpio, simple y legible).
@@ -225,125 +377,126 @@ private fun QuickActionsRow(
     }
 }
 
-// Card que envuelve el calendario.
+// Bandeja de entrada diaria
 @Composable
-private fun CalendarCard(
-    selectedDay: Int,
-    onDaySelected: (Int) -> Unit
+private fun DailyInboxCard(
+    currentDate: LocalDate,
+    notes: List<Note>,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
+    onCreateNote: () -> Unit,
+    onAssignRoutine: () -> Unit,
+    onNoteClick: (Note) -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Tu calendario",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            CalendarWidget(
-                selectedDay = selectedDay,
-                onDaySelected = onDaySelected
-            )
-        }
-    }
-}
-
-// Panel informativo del día seleccionado.
-// Luego aquí meteremos lista de notas/rutinas reales.
-@Composable
-private fun SelectedDayCard(
-    selectedDay: Int,
-    onCreateNote: () -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-
+            // Cabecera con flechas y fecha
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(onClick = onPreviousDay) {
+                    Icon(imageVector = Icons.Filled.ChevronLeft, contentDescription = "Día anterior")
+                }
+
+                val dateText = when (currentDate) {
+                    LocalDate.now() -> "Hoy"
+                    LocalDate.now().minusDays(1) -> "Ayer"
+                    LocalDate.now().plusDays(1) -> "Mañana"
+                    else -> currentDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+                }
+
                 Text(
-                    text = "Detalle del día",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
+                    text = dateText,
+                    style = MaterialTheme.typography.titleLarge
                 )
 
-                val chipText = if (selectedDay == 0) "Sin selección" else "Seleccionado"
-                val chipBg = if (selectedDay == 0)
-                    MaterialTheme.colorScheme.surfaceVariant
-                else
-                    MaterialTheme.colorScheme.primaryContainer
-
-                val chipTextColor = if (selectedDay == 0)
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                else
-                    MaterialTheme.colorScheme.onPrimaryContainer
-
-                Surface(
-                    color = chipBg,
-                    shape = RoundedCornerShape(999.dp)
-                ) {
-                    Text(
-                        text = chipText,
-                        color = chipTextColor,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
+                IconButton(onClick = onNextDay) {
+                    Icon(imageVector = Icons.Filled.ChevronRight, contentDescription = "Día siguiente")
                 }
             }
 
-            if (selectedDay == 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+            // Contenido: Notas y Rutinas
+            if (notes.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.EventNote,
+                        imageVector = Icons.Filled.Inbox,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
                     Text(
-                        text = "Selecciona un día en el calendario para ver tus notas o rutinas.",
+                        text = "No hay notas ni rutinas para este día.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
-                Text(
-                    text = "Día $selectedDay",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    notes.forEach { note ->
+                        NoteItem(note = note, onClick = { onNoteClick(note) })
+                    }
+                }
+            }
 
-                Text(
-                    text = "Aquí podrás ver y gestionar lo que tengas planificado.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
+            // Botonera de acciones
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Button(
                     onClick = onCreateNote,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFF7A00),
                         contentColor = Color.White
                     )
                 ) {
-                    Text("Crear nota para este día")
+                    Text("Añadir nota")
                 }
+
+                OutlinedButton(
+                    onClick = onAssignRoutine,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Añadir rutina")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteItem(note: Note, onClick: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(text = note.title, style = MaterialTheme.typography.titleSmall)
+            if (note.body.isNotBlank()) {
+                Text(
+                    text = note.body,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2
+                )
             }
         }
     }

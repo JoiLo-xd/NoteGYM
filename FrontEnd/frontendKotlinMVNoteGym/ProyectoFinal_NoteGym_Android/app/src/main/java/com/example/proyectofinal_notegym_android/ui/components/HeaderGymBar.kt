@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,7 +30,6 @@ import com.example.proyectofinal_notegym_android.R
 fun HeaderGymBar(
     title: String,              // Texto principal del header (ej: "Dashboard")
     userName: String,            // Nombre a mostrar a la derecha
-    onMenuClick: () -> Unit,     // Click del menú (más adelante abrirá el drawer)
     onProfileClick: () -> Unit,  // Click del perfil (más adelante navegará al perfil)
     modifier: Modifier = Modifier
 ) {
@@ -40,11 +38,6 @@ fun HeaderGymBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
         ),
-        navigationIcon = {
-            IconButton(onClick = onMenuClick) {
-                Icon(imageVector = Icons.Filled.Menu, contentDescription = "Abrir menú")
-            }
-        },
         title = {
             Row {
                 Image(
