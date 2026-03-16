@@ -1,32 +1,111 @@
-import { useSnack } from "@/components/SnackProvider";
+import { useState } from "react";
+// import { useSnack } from "@/components/SnackProvider"; // Retenido pero comentado en caso de usar notificaciones después
 import { ContinuousCalendar } from "@/components/ContinuousCalendar";
 
 interface DashboardGymProps {
-  userRole: "admin" | "user" | "trainer";
-  userName: string;
+  userRole?: "admin" | "user" | "trainer";
+  userName?: string;
 }
 
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+interface Note {
+  id: string;
+  title: string;
+  body: string;
+}
 
+const monthNames = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
 
 export default function DashboardGym({ userRole: propsRole, userName: propsName }: DashboardGymProps) {
-
-  // --- LÓGICA DE RESCATE (Para que no se quede en blanco) ---
-  // 1. Prioridad: Lo que viene por props
-  // 2. Segunda opción: Lo que guardamos en el login (localStorage)
-  // 3. Tercera opción: Valores genéricos para que veas la interfaz
+  // Lógica de rescate
   const userName = propsName || localStorage.getItem('username') || "Usuario de Prueba";
   const userRole = propsRole || (localStorage.getItem('role') as any) || "admin";
 
-
   const welcomeMessage = `👋 Bienvenid@ ${userName}`;
 
+  // Estados del panel de día
+  const [selectedDate, setSelectedDate] = useState<{ day: number; month: number; year: number } | null>(null);
+  const [notes, setNotes] = useState<Record<string, Note[]>>({});
 
-  //const { createSnack } = useSnack();
-  //const onClickHandler = (day: number, month: number, year: number) => {
-  //  const snackMessage = `Clicked on ${monthNames[month]} ${day}, ${year}`
-  //  createSnack(snackMessage, 'success');
-  //};
+  // Estados para creación de nueva nota
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteBody, setNoteBody] = useState("");
+
+  // Estados para modal de nota rápida
+  const [isQuickNoteModalOpen, setIsQuickNoteModalOpen] = useState(false);
+  const [quickNoteDate, setQuickNoteDate] = useState("");
+  const [quickNoteTitle, setQuickNoteTitle] = useState("");
+  const [quickNoteBody, setQuickNoteBody] = useState("");
+  const [showCalendarDropdown, setShowCalendarDropdown] = useState(false);
+
+  const handleDateClick = (day: number, month: number, year: number, createNote: boolean = false) => {
+    setSelectedDate({ day, month, year });
+    setIsCreatingNote(createNote); // Abre el formulario si createNote es true
+    setNoteTitle("");
+    setNoteBody("");
+  };
+
+  // Obtener notas del día seleccionado
+  const dateKey = selectedDate ? `${selectedDate.year}-${selectedDate.month}-${selectedDate.day}` : "";
+  const currentNotes = selectedDate ? (notes[dateKey] || []) : [];
+
+  const quickNoteDateFormatted = quickNoteDate ? (() => {
+    const [y, m, d] = quickNoteDate.split("-");
+    return `${parseInt(d, 10)} de ${monthNames[parseInt(m, 10) - 1]} de ${y}`;
+  })() : "";
+
+  const handleSaveNote = () => {
+    if (!noteTitle.trim() || !noteBody.trim() || !selectedDate) return;
+
+    const newNote: Note = {
+      id: Date.now().toString(),
+      title: noteTitle,
+      body: noteBody,
+    };
+
+    setNotes(prev => ({
+      ...prev,
+      [dateKey]: [...(prev[dateKey] || []), newNote]
+    }));
+
+    setIsCreatingNote(false);
+    setNoteTitle("");
+    setNoteBody("");
+  };
+
+  const handleSaveQuickNote = () => {
+    if (!quickNoteTitle.trim() || !quickNoteBody.trim() || !quickNoteDate) return;
+
+    // Desglosar la fecha seleccionada (YYYY-MM-DD)
+    const [yearStr, monthStr, dayStr] = quickNoteDate.split("-");
+    const year = parseInt(yearStr, 10);
+    const monthIndex = parseInt(monthStr, 10) - 1; // 0-indexed para el diccionario
+    const day = parseInt(dayStr, 10);
+
+    const key = `${year}-${monthIndex}-${day}`;
+
+    const newNote: Note = {
+      id: Date.now().toString(),
+      title: quickNoteTitle,
+      body: quickNoteBody,
+    };
+
+    setNotes(prev => ({
+      ...prev,
+      [key]: [...(prev[key] || []), newNote]
+    }));
+
+    // Cerrar y resetear
+    setIsQuickNoteModalOpen(false);
+    setQuickNoteTitle("");
+    setQuickNoteBody("");
+    setQuickNoteDate("");
+
+    // Si la fecha coincide con la que tienes abierta en el panel del día, forzamos un rerender de los valores pero ya se ven por setNotes
+  };
 
   return (
     <div className="mx-auto w-full max-w-6x2">
@@ -39,10 +118,15 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
             Planifica entrenos, asigna rutinas y añade notas por día.
           </p>
 
-          {/* Quick actions (sin lógica aún) */}
           <div className="mt-3 flex flex-col sm:flex-row gap-3">
-            <button className="px-5 py-3 rounded-xl bg-[#FF5722] text-white font-semibold hover:bg-[#F4511E] transition">
-              + Crear nota
+            <button
+              onClick={() => {
+                setIsQuickNoteModalOpen(true);
+                setShowCalendarDropdown(false);
+              }}
+              className="px-5 py-3 rounded-xl bg-[#FF5722] text-white font-semibold hover:bg-[#F4511E] transition hover:-translate-y-0.5 shadow-md hover:shadow-lg"
+            >
+              + Crear nota rápida
             </button>
             <button className="px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition">
               Asignar rutina
@@ -54,60 +138,128 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
         </div>
 
         {/* Main grid */}
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-
+        <div className="mt-10 mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
 
           {/* Calendario */}
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-semibold text-[#FF5722] mb-4">
+          <div className="lg:col-span-2 flex flex-col items-center">
+            <h2 className="text-2xl font-semibold text-[#FF5722] mb-4 text-center">
               Tu calendario de entrenamiento
             </h2>
-            <ContinuousCalendar  />
+            <ContinuousCalendar onClick={handleDateClick} />
           </div>
 
-          
-
-          {/* Panel del día (placeholder bonito, sin inventar backend) */}
-          <div className="lg:col-span-1">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md">
+          {/* Panel del día */}
+          <div className="lg:col-span-1 lg:mt-12 lg:-ml-11 lg:mr-12 transition-transform">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all h-full">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
                 Panel del día
               </h3>
-              <p className="text-gray-600 mb-4">
-                Aquí verás la rutina y las notas del día seleccionado.
-              </p>
 
-              <div className="space-y-3">
-                <div className="rounded-xl border border-gray-200 p-4">
-                  <p className="text-sm text-gray-500">Rutina</p>
-                  <p className="text-gray-800 font-medium">
-                    Ninguna rutina asignada.
+              {!selectedDate ? (
+                <p className="text-gray-600 mb-4 h-full flex items-center justify-center p-6 text-center border-2 border-dashed border-gray-200 rounded-xl">
+                  Selecciona un día en el calendario para ver sus detalles.
+                </p>
+              ) : (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <p className="text-sm font-bold uppercase tracking-wider text-[#FF5722] mb-6 border-b border-gray-100 pb-2">
+                    {selectedDate.day} de {monthNames[selectedDate.month]} de {selectedDate.year}
                   </p>
-                </div>
 
-                <div className="rounded-xl border border-gray-200 p-4">
-                  <p className="text-sm text-gray-500">Notas</p>
-                  <p className="text-gray-800 font-medium">
-                    Aún no hay notas para este día.
-                  </p>
-                </div>
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Rutina Asignada</p>
+                      <p className="text-gray-700 font-medium text-sm">
+                        Ninguna rutina asignada.
+                      </p>
+                    </div>
 
-                <button className="w-full px-4 py-3 rounded-xl bg-[#FF5722] text-white font-semibold hover:bg-[#F4511E] transition">
-                  Añadir nota
-                </button>
-              </div>
+                    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 block">Tus Notas</p>
+
+                      {currentNotes.length === 0 ? (
+                        <p className="text-gray-500 italic text-sm text-center py-4 bg-gray-50 rounded-lg">
+                          No hay notas en este día.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {currentNotes.map(note => (
+                            <details key={note.id} className="group bg-gray-50 rounded-lg border border-gray-200 overflow-hidden text-sm transition-all shadow-sm">
+                              <summary className="font-semibold text-gray-800 cursor-pointer p-3 hover:bg-gray-100 transition flex items-center justify-between">
+                                {note.title}
+                                <span className="opacity-50 group-open:rotate-180 transition-transform">▼</span>
+                              </summary>
+                              <div className="p-3 text-gray-600 border-t border-gray-200 bg-white leading-relaxed">
+                                {note.body}
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {!isCreatingNote ? (
+                      <button
+                        onClick={() => setIsCreatingNote(true)}
+                        className="w-full mt-2 px-4 py-3 rounded-xl bg-[#FF5722] text-white font-semibold flex items-center justify-center gap-2 hover:bg-[#F4511E] transition shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                      >
+                        <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        Añadir nota
+                      </button>
+                    ) : (
+                      <div className="rounded-xl border-2 border-orange-100 bg-orange-50/40 p-5 mt-2 space-y-4 animate-in zoom-in-95 duration-200 shadow-inner">
+                        <div>
+                          <label className="block text-[10px] font-bold text-orange-800 uppercase tracking-widest mb-1.5 pl-1">Título de la nota</label>
+                          <input
+                            type="text"
+                            value={noteTitle}
+                            onChange={(e) => setNoteTitle(e.target.value)}
+                            placeholder="Ej: Día de pierna"
+                            autoFocus
+                            className="w-full px-4 py-2.5 rounded-lg border border-orange-200 bg-white focus:border-[#FF5722] focus:ring-2 focus:ring-[#FF5722]/20 outline-none transition text-sm text-gray-800 font-medium placeholder:text-gray-400 placeholder:font-normal"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-orange-800 uppercase tracking-widest mb-1.5 pl-1">Cuerpo / Detalles</label>
+                          <textarea
+                            value={noteBody}
+                            onChange={(e) => setNoteBody(e.target.value)}
+                            placeholder="Escribe los ejercicios, pesos o sensaciones aquí..."
+                            rows={3}
+                            className="w-full px-4 py-3 rounded-lg border border-orange-200 bg-white focus:border-[#FF5722] focus:ring-2 focus:ring-[#FF5722]/20 outline-none transition text-sm resize-none text-gray-800 placeholder:text-gray-400"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={handleSaveNote}
+                            disabled={!noteTitle.trim() || !noteBody.trim()}
+                            className="flex-1 px-4 py-2.5 rounded-lg bg-gray-900 text-white font-semibold text-sm hover:bg-gray-800 transition disabled:opacity-50 disabled:hover:bg-gray-900 disabled:cursor-not-allowed shadow-md"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            onClick={() => setIsCreatingNote(false)}
+                            className="px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {userRole === "admin" && (
-              <div className="mt-6 p-4 rounded-xl bg-yellow-100 border border-yellow-300 text-yellow-800">
+              <div className="mt-6 p-4 rounded-xl bg-yellow-100 border border-yellow-300 text-yellow-800 text-sm font-semibold flex items-center gap-2">
+                <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Panel de Administración Activo
               </div>
             )}
           </div>
         </div>
 
-        {/* Bottom cards (sin la de notas) */}
+        {/* Bottom cards */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           <DashboardCard
             title="Tu Perfil"
@@ -123,12 +275,85 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
           />
         </div>
       </div>
+
+      {/* Modal de nota rápida */}
+      {isQuickNoteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 animate-in zoom-in-95 duration-200 border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-extrabold text-[#FF5722] tracking-tight">Crear nota rápida</h3>
+              <button
+                onClick={() => setIsQuickNoteModalOpen(false)}
+                className="text-gray-400 hover:text-[#FF5722] transition bg-gray-50 hover:bg-orange-50 p-2.5 rounded-xl"
+              >
+                <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="relative">
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 pl-1">Seleccionar Fecha</label>
+                <div
+                  onClick={() => setShowCalendarDropdown(!showCalendarDropdown)}
+                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-100 cursor-pointer flex justify-between items-center transition text-sm font-medium"
+                >
+                  <span className={quickNoteDate ? "text-gray-800" : "text-gray-400"}>
+                    {quickNoteDate ? quickNoteDateFormatted : "Elige un día en el calendario..."}
+                  </span>
+                  <svg className="size-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+
+                {showCalendarDropdown && (
+                  <div className="absolute top-[105%] left-0 w-full z-[60] animate-in slide-in-from-top-2 duration-200 shadow-2xl rounded-3xl pb-2">
+                    <ContinuousCalendar
+                      onClick={(day, month, year) => {
+                        setQuickNoteDate(`${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
+                        setShowCalendarDropdown(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 pl-1">Título de la nota</label>
+                <input
+                  type="text"
+                  value={quickNoteTitle}
+                  onChange={(e) => setQuickNoteTitle(e.target.value)}
+                  placeholder="Ej: Día de pierna, Nutrición, etc."
+                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#FF5722] focus:ring-2 focus:ring-[#FF5722]/20 outline-none transition text-sm text-gray-800 font-medium placeholder:text-gray-400 placeholder:font-normal"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 pl-1">Cuerpo / Detalles</label>
+                <textarea
+                  value={quickNoteBody}
+                  onChange={(e) => setQuickNoteBody(e.target.value)}
+                  placeholder="Escribe los detalles y notas aquí..."
+                  rows={4}
+                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#FF5722] focus:ring-2 focus:ring-[#FF5722]/20 outline-none transition text-sm resize-none text-gray-800 placeholder:text-gray-400"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={handleSaveQuickNote}
+                  disabled={!quickNoteDate || !quickNoteTitle.trim() || !quickNoteBody.trim()}
+                  className="w-full px-4 py-3.5 rounded-xl bg-[#FF5722] text-white font-bold flex items-center justify-center gap-2 hover:bg-[#F4511E] transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5 text-sm uppercase tracking-widest"
+                >
+                  Guardar nota
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 const DashboardCard = ({ title, content }: { title: string; content: string }) => (
-  <div className="p-6 rounded-2xl border border-gray-200 bg-white shadow-md hover:shadow-xl transition duration-300">
+  <div className="p-6 rounded-2xl border border-gray-200 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300">
     <h3 className="text-xl font-semibold text-[#FF5722] mb-2">{title}</h3>
     <p className="text-gray-600">{content}</p>
   </div>
