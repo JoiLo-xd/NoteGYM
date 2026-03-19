@@ -5,17 +5,17 @@ import RegisterUser from "./routes/registerUser";
 import ProtectedRoute from './routes/ProtectedRoute';
 import DashboardRoute from './routes/DashboardRoute';
 import Profile from './components/ProfileGym';
-import DesbloqUsers from './components/admin/DesbloqUsers'; 
+import DesbloqUsers from './components/admin/DesbloqUsers';
 import ModUsers from './components/admin/ModUsers';
 import RoutinesPage from './components/RoutinesPage';
 
 
 function App() {
-    return(
+    return (
         <BrowserRouter>
             <Routes>
-                <Route path="/loginUserGym" element={<LoginUser />} />    //(LoginUser)nombre de las funcion que crearemos dentro de la carpeta routes dentro del file loginUser
-                <Route path="/newUserGym" element={<RegisterUser />} />   //(RegisterUser)nombre de las funcion que crearemos dentro de la carpeta routes dentro del file registerUser
+                <Route path="/loginUserGym" element={<LoginUser />} />
+                <Route path="/newUserGym" element={<RegisterUser />} />
                 <Route path="/" element={<LoginUser />} />
 
                 <Route path="/dashboard" element={<DashboardRoute />} />
@@ -27,7 +27,7 @@ function App() {
             </Routes>
 
         </BrowserRouter>
-        )
+    )
 
 
 }
