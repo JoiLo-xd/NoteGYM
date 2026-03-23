@@ -100,8 +100,8 @@
 
             <plugin>
                 <groupId>org.hibernate.tool</groupId>
-                <artifactId>hibernate-tools-maven-plugin</artifactId>
-                <version>6.4.4.Final</version>
+                <artifactId>hibernate-tools-maven</artifactId>
+                <version>6.4.8.Final</version> 
                 <configuration>
                     <propertyFile>src/main/resources/hibernate.properties</propertyFile>
                     <outputDirectory>src/main/java</outputDirectory>
