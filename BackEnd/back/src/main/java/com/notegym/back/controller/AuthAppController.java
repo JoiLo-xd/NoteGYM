@@ -52,7 +52,7 @@ public class AuthAppController {
 
 
     @PostMapping("/register")
-
+    //POJOS
     @ResponseStatus(HttpStatus.CREATED)
     public RegisterJO registerUser(@RequestBody User newUser) {
         newUser.setUsername(newUser.getUsername().toLowerCase());
