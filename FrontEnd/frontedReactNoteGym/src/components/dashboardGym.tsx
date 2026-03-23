@@ -374,8 +374,8 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
 
       {/* Modal de nota rápida */}
       {isQuickNoteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 animate-in zoom-in-95 duration-200 border border-gray-100">
+        <div className="fixed inset-0 z-50 flex justify-center items-start pt-12 sm:pt-20 px-4 pb-4 overflow-y-auto bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 mb-12 animate-in zoom-in-95 duration-200 border border-gray-100">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-extrabold text-[#FF5722] tracking-tight">Crear nota rápida</h3>
               <button
