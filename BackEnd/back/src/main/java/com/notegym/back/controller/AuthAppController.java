@@ -1,3 +1,4 @@
+/* 
 package com.notegym.back.controller;
 
 import java.security.Timestamp;
@@ -96,7 +97,7 @@ public class AuthAppController {
             AUDIT_LOGGER.warn("LOGIN_FAILED: Este usuari esta bloquejat: {}", login.getUsername());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Aquest usuari esta bloquejat"); 
 
-        }*/
+        }
 
         if (!passwordEncoder.matches(login.getPassword(), usuario.getPassword())){
             usuario.setTriesLogIn(usuario.getTriesLogIn() + 1);
@@ -138,12 +139,12 @@ public class AuthAppController {
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: El usuari no es admin: {}", login.getUsername());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Este usuario no es administrador"); 
         }
-        /* 
+        /
         if (!usuario.isBlocked()){
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: El usuari no esta bloquejat: {}", username);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El usuario admin que intenta desblockear no esta bloquejat");
         }
-            */
+            
 
         if (!userRepository.findByUsername(username).isPresent()){
             AUDIT_LOGGER.warn("DESBLOCK_FAILED: No es troba ningun usuari amb aquest nom per cambiar l'estat: {}", login.getUsername());
@@ -173,3 +174,4 @@ public class AuthAppController {
 
 
 }
+*/
