@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ContinuousCalendar } from "./ContinuousCalendar";
+import HeaderGym from "./headerGym";
+import Sidebar from "./Sidebar";
 
 // Tipo para las rutinas
 interface Routine {
@@ -92,22 +94,18 @@ export default function RoutinesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6">
-      <div className="mx-auto w-full max-w-6xl">
-        
-        {/* Header & Nav */}
-        <div className="flex items-center gap-4 mb-8">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="p-3 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-[#FF5722] hover:bg-orange-50 transition shadow-sm"
-          >
-            <svg className="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-          </button>
-          <div>
+    <div className="min-h-screen gym-bg flex flex-col">
+      <HeaderGym />
+      <Sidebar userRole={(localStorage.getItem('role') as any) || "user"} />
+      
+      <main className="flex-grow pt-24 px-6 pb-10">
+        <div className="mx-auto w-full max-w-6xl">
+          
+          {/* Header & Nav */}
+          <div className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-extrabold text-[#FF5722] tracking-tight">Biblioteca de Rutinas</h1>
             <p className="text-gray-600 mt-1">Explora y asigna rutinas a tu calendario de entrenamiento.</p>
           </div>
-        </div>
 
         {/* Listado de Rutinas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -201,6 +199,17 @@ export default function RoutinesPage() {
           </div>
         </div>
       )}
+
+      {/* Botón Flotante Volver */}
+      <button 
+          onClick={() => navigate('/dashboard')}
+          className="fixed bottom-8 right-8 bg-[#FF5722] hover:bg-[#F4511E] text-white p-4 rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95"
+          title="Volver al Dashboard"
+      >
+          <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      </button>
+
+      </main>
     </div>
   );
 }

@@ -33,10 +33,48 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
   
   const navigate = useNavigate();
 
-  // Cargar datos de localStorage al montar
+  // Cargar datos del backend y localStorage al montar
   useEffect(() => {
-    const savedNotes = localStorage.getItem('user_notes');
-    if (savedNotes) setNotes(JSON.parse(savedNotes));
+    const fetchNotes = async () => {
+      try {
+        const username = localStorage.getItem('username');
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:8080/api/notas', {
+          headers: {
+            'Authorization': `Bearer ${token}` // Añadir si en algún momento proteges la ruta
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const grouped: Record<string, Note[]> = {};
+          data.forEach((backendNote: any) => {
+             // Solo cargamos notas del usuario
+             if (backendNote.user?.username !== username) return;
+             
+             const dateObj = new Date(backendNote.noteDate);
+             const key = `${dateObj.getFullYear()}-${dateObj.getMonth()}-${dateObj.getDate()}`;
+             
+             if (!grouped[key]) grouped[key] = [];
+             grouped[key].push({
+               id: backendNote.id.toString(),
+               title: backendNote.name,
+               body: backendNote.text
+             });
+          });
+          setNotes(grouped);
+        } else {
+            // Fallback
+            const savedNotes = localStorage.getItem('user_notes');
+            if (savedNotes) setNotes(JSON.parse(savedNotes));
+        }
+      } catch (err) {
+        console.error("Error fetching notes", err);
+        const savedNotes = localStorage.getItem('user_notes');
+        if (savedNotes) setNotes(JSON.parse(savedNotes));
+      }
+    };
+    
+    fetchNotes();
 
     const savedRoutines = localStorage.getItem('user_assigned_routines');
     if (savedRoutines) setAssignedRoutines(JSON.parse(savedRoutines));
@@ -70,11 +108,39 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     return `${parseInt(d, 10)} de ${monthNames[parseInt(m, 10) - 1]} de ${y}`;
   })() : "";
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!noteTitle.trim() || !noteBody.trim() || !selectedDate) return;
 
+    const username = localStorage.getItem('username') || "admin";
+    const token = localStorage.getItem('token') || "";
+    let realId = Date.now().toString();
+
+    try {
+      // Creamos la fecha a mediodía para evitar problemas de zona horaria al cargar
+      const noteDate = new Date(Date.UTC(selectedDate.year, selectedDate.month, selectedDate.day, 12, 0, 0)).toISOString();
+      const res = await fetch('http://localhost:8080/api/notas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user: { username },
+          name: noteTitle,
+          text: noteBody,
+          noteDate: noteDate
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        realId = data.id.toString();
+      }
+    } catch (e) {
+      console.error("Backend no disponible, guardando localmente.", e);
+    }
+
     const newNote: Note = {
-      id: Date.now().toString(),
+      id: realId,
       title: noteTitle,
       body: noteBody,
     };
@@ -92,7 +158,7 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     setNoteBody("");
   };
 
-  const handleSaveQuickNote = () => {
+  const handleSaveQuickNote = async () => {
     if (!quickNoteTitle.trim() || !quickNoteBody.trim() || !quickNoteDate) return;
 
     // Desglosar la fecha seleccionada (YYYY-MM-DD)
@@ -103,8 +169,35 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
 
     const key = `${year}-${monthIndex}-${day}`;
 
+    const username = localStorage.getItem('username') || "admin";
+    const token = localStorage.getItem('token') || "";
+    let realId = Date.now().toString();
+
+    try {
+      const noteDate = new Date(Date.UTC(year, monthIndex, day, 12, 0, 0)).toISOString();
+      const res = await fetch('http://localhost:8080/api/notas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user: { username },
+          name: quickNoteTitle,
+          text: quickNoteBody,
+          noteDate: noteDate
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        realId = data.id.toString();
+      }
+    } catch (e) {
+      console.error("Backend no disponible, guardando localmente.", e);
+    }
+
     const newNote: Note = {
-      id: Date.now().toString(),
+      id: realId,
       title: quickNoteTitle,
       body: quickNoteBody,
     };
@@ -122,14 +215,24 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     setQuickNoteTitle("");
     setQuickNoteBody("");
     setQuickNoteDate("");
-
-    // Si la fecha coincide con la que tienes abierta en el panel del día, forzamos un rerender de los valores pero ya se ven por setNotes
   };
 
-  const handleDeleteNote = (dateKeyParam: string, noteId: string) => {
+  const handleDeleteNote = async (dateKeyParam: string, noteId: string) => {
     if (!notes[dateKeyParam]) return;
     
     if (!window.confirm("¿Seguro que quieres eliminar esta nota?")) return;
+
+    try {
+      const token = localStorage.getItem('token') || "";
+      await fetch(`http://localhost:8080/api/notas/${noteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (e) {
+      console.error("No se pudo borrar del backend.", e);
+    }
 
     const updatedNotesList = notes[dateKeyParam].filter(note => note.id !== noteId);
     

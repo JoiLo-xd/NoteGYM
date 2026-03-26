@@ -67,7 +67,7 @@ export default function RegisterNoteGym () {
             // Desestructuramos para NO enviar 'passwordRep' al servidor
             const { passwordRep, ...dataToSend } = formData; 
 
-            const res = await fetch("http://localhost:8080/api/user/register", {
+            const res = await fetch("http://localhost:8080/auth/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -75,12 +75,12 @@ export default function RegisterNoteGym () {
                 body: JSON.stringify(dataToSend) // Enviamos solo los datos del registro
             });
 
-            const data = await res.json();
+            const dataText = await res.text();
 
     // Estado para el mensaje de error de validación de la contraseña
             if (res.ok) {
                 setStatus("success");
-                setServerMessage(data.message || "¡Usuario registrado correctamente!");
+                setServerMessage(dataText || "¡Usuario registrado correctamente!");
                 
                 setTimeout(() => {
                     navigate('/loginUserGym'); 
@@ -90,7 +90,7 @@ export default function RegisterNoteGym () {
                 setFormData({ username: "", password: "", passwordRep: "", name: "", mail: "", sex: "" });
             } else {
                 setStatus("error");
-                setServerMessage(data.message || "Error desconocido al registrar.");
+                setServerMessage(dataText || "Error desconocido al registrar.");
             }
 
         } catch (error) {

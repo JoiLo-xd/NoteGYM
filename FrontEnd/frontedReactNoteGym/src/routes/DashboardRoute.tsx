@@ -64,7 +64,7 @@ export default function DashboardRoute() {
     }, []);
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen gym-bg flex flex-col">
             <HeaderGym />
             
             <Sidebar userRole={userRole} /> 

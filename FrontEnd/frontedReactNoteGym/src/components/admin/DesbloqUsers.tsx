@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderGym from '../headerGym';
+import Sidebar from '../Sidebar';
 
 const API_BASE_URL = "http://localhost:8080"; 
 
 export default function DesbloqUsers() {
+    const userRole = (localStorage.getItem('role') as any) || "user";
     const [formData, setFormData] = useState({
         targetUsername: "", // El usuario a desbloquear
         adminUsername: "",  // Credencial del administrador
@@ -133,11 +136,16 @@ export default function DesbloqUsers() {
     };
 
     return (
-        <div className="w-full max-w-md mx-auto mt-20 p-8 bg-white rounded-xl shadow-2xl border border-gray-200">
+        <div className="min-h-screen gym-bg flex flex-col">
+            <HeaderGym />
+            <Sidebar userRole={userRole} />
             
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-3 text-[#FF5722]">
-                Desbloquear Usuario
-            </h2>
+            <main className="flex-grow pt-24 px-6 pb-10 flex flex-col justify-start items-center">
+                <div className="w-full max-w-md mx-auto mt-4 bg-white rounded-xl shadow-2xl border border-gray-200 p-8">
+                    
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-3 text-[#FF5722]">
+                        Desbloquear Usuario
+                    </h2>
 
             <FeedbackMessage />
 
@@ -213,5 +221,17 @@ export default function DesbloqUsers() {
             </form>
             
         </div>
+
+        {/* Botón Flotante Volver */}
+        <button 
+            onClick={() => navigate('/dashboard')}
+            className="fixed bottom-8 right-8 bg-[#FF5722] hover:bg-[#F4511E] text-white p-4 rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95"
+            title="Volver al Dashboard"
+        >
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+
+        </main>
+    </div>
     );
 }

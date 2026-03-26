@@ -1,47 +1,38 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Descomenta si lo necesitas
+import { useNavigate } from 'react-router-dom';
+import HeaderGym from '../headerGym';
+import Sidebar from '../Sidebar';
+
 
 // Definición de roles para el combobox
 type Role = 'admin' | 'trainer' | 'user';
 
-// Interfaz para la data del usuario que estamos modificando
-interface UserData {
-    id: string;
-    username: string;
-    currentRole: Role;
-}
-
 export default function ModUsers() {
-    // *** ESTADO MOCK: Simula la carga inicial de un usuario (debería venir de una API) ***
-    const [userToModify, setUserToModify] = useState<UserData>({
-        id: '12345',
-        username: 'juan.perez',
-        currentRole: 'user', // Rol inicial
-    });
-    
-    // Estado para el rol seleccionado en el combobox
-    const [newRole, setNewRole] = useState<Role>(userToModify.currentRole);
+    const userRole = (localStorage.getItem('role') as any) || "user";
+    const navigate = useNavigate();
+    // Estado para el usuario que se va a modificar/eliminar
+    const [usernameInput, setUsernameInput] = useState<string>('');
+    const [newRole, setNewRole] = useState<Role>('user');
     
     // Estado para feedback (cargando, éxito, error)
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');
 
     const roles: Role[] = ['admin', 'trainer', 'user'];
-    const navigate = useNavigate(); // Descomenta si vas a usar redirecciones
 
     const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setNewRole(e.target.value as Role);
     };
 
     const handleModifyRole = async () => {
-        if (newRole === userToModify.currentRole) {
-            setMessage("El nuevo rol es el mismo que el actual.");
+        if (!usernameInput.trim()) {
+            setMessage("Introduce el nombre de usuario.");
             setStatus('error');
             return;
         }
 
         setStatus('loading');
-        setMessage(`Modificando el rol de ${userToModify.username} a ${newRole}...`);
+        setMessage(`Modificando el rol de ${usernameInput} a ${newRole}...`);
 
         try {
             // Aquí iría tu fetch a Spring Boot (e.g., PUT http://localhost:8080/api/admin/users/{id})
@@ -51,9 +42,8 @@ export default function ModUsers() {
             await new Promise(resolve => setTimeout(resolve, 1500)); 
 
             // Si la API es exitosa:
-            setUserToModify(prev => ({ ...prev, currentRole: newRole }));
             setStatus('success');
-            setMessage(`¡Rol modificado a ${newRole} correctamente!`);
+            setMessage(`¡Rol de ${usernameInput} modificado a ${newRole} correctamente!`);
 
         } catch (e) {
             setStatus('error');
@@ -62,25 +52,29 @@ export default function ModUsers() {
     };
 
     const handleDeleteAccount = async () => {
-        if (!window.confirm(`¿Estás seguro de que quieres ELIMINAR la cuenta de ${userToModify.username}? Esta acción es irreversible.`)) {
+        if (!usernameInput.trim()) {
+            setMessage("Introduce el nombre de usuario que vas a eliminar.");
+            setStatus('error');
+            return;
+        }
+
+        if (!window.confirm(`¿Estás seguro de que quieres ELIMINAR la cuenta de ${usernameInput}? Esta acción es irreversible.`)) {
             return;
         }
 
         setStatus('loading');
-        setMessage(`Eliminando la cuenta de ${userToModify.username}...`);
+        setMessage(`Eliminando la cuenta de ${usernameInput}...`);
 
         try {
-            // Aquí iría tu fetch a Spring Boot (e.g., DELETE http://localhost:8080/api/admin/users/{id})
+            // Aquí iría tu fetch a Spring Boot (e.g., DELETE http://localhost:8080/api/admin/users/{username})
 
             // --- SIMULACIÓN DE API ---
             await new Promise(resolve => setTimeout(resolve, 1500)); 
 
             // Si la API es exitosa:
             setStatus('success');
-            setMessage(`¡Cuenta de ${userToModify.username} eliminada con éxito!`);
-            
-            navigate('/dashboard');
-            setUserToModify({ id: '', username: 'Eliminado', currentRole: 'user' }); 
+            setMessage(`¡Cuenta de ${usernameInput} eliminada con éxito!`);
+            setUsernameInput('');
 
         } catch (e) {
             setStatus('error');
@@ -104,31 +98,38 @@ export default function ModUsers() {
     };
 
     return (
-        <div className="w-full max-w-lg mx-auto mt-10 p-6 bg-white rounded-xl shadow-2xl border border-gray-200">
+        <div className="min-h-screen gym-bg flex flex-col">
+            <HeaderGym />
+            <Sidebar userRole={userRole} />
             
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-3 text-[#FF5722]">
-                Gestión de Cuenta
-            </h2>
+            <main className="flex-grow pt-24 px-6 pb-10 flex flex-col justify-start items-center">
+                
+                <div className="w-full max-w-lg p-6 mt-4 bg-white rounded-xl shadow-2xl border border-gray-200">
+                    
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-3 text-[#FF5722]">
+                        Gestión de Cuenta
+                    </h2>
 
             <FeedbackMessage />
 
             <div className="space-y-6">
                 
-                {/* Campo de Nombre de Usuario (Solo lectura) */}
                 <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre de Usuario
+                        Username a modificar
                     </label>
-                    {/* Estilo de campo de solo lectura */}
-                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 text-lg font-mono text-gray-800 shadow-inner">
-                        {userToModify.username || 'N/A'} 
-                    </div>
+                    <input 
+                        type="text"
+                        value={usernameInput}
+                        onChange={(e) => setUsernameInput(e.target.value)}
+                        placeholder="Escribe el nombre de usuario..."
+                        className="bg-white border border-gray-400 rounded-lg p-3 text-lg text-gray-800 shadow-inner focus:outline-none focus:border-[#FF5722] focus:ring-1 focus:ring-[#FF5722]"
+                    />
                 </div>
 
-                {/* Combobox para Cambiar el Rol */}
                 <div className="flex flex-col">
                     <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-2">
-                        Rol Actual: <span className="font-bold text-[#FF5722] capitalize">{userToModify.currentRole}</span>
+                        Nuevo Rol a Asignar
                     </label>
                     <div className="relative">
                         <select
@@ -137,7 +138,7 @@ export default function ModUsers() {
                             value={newRole}
                             onChange={handleRoleChange}
                             className="w-full bg-white border border-gray-400 text-gray-800 py-3 px-3 pr-10 rounded-lg focus:outline-none focus:border-[#FF5722] focus:ring-1 focus:ring-[#FF5722] transition-colors appearance-none"
-                            disabled={status === 'loading' || !userToModify.id}
+                            disabled={status === 'loading'}
                         >
                             {roles.map((role) => (
                                 <option key={role} value={role} className="capitalize">
@@ -154,15 +155,14 @@ export default function ModUsers() {
 
             </div>
 
-            {/* Contenedor de Botones (Separados y Distinguibles) */}
             <div className="mt-8 pt-4 border-t flex flex-col sm:flex-row gap-4">
                 
                 {/* Botón para Modificar Rol (Acción Primaria) */}
                 <button
                     onClick={handleModifyRole}
-                    className={`sm:flex-1 bg-[#FF5722] hover:bg-[#F4511E] text-black font-bold py-3 px-4 rounded-xl shadow-[0_4px_14px_0_rgba(255,87,34,0.39)] transition-all duration-200 
-                        ${(status === 'loading' || !userToModify.id || newRole === userToModify.currentRole) ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
-                    disabled={status === 'loading' || !userToModify.id || newRole === userToModify.currentRole}
+                    className={`sm:flex-1 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold py-3 px-4 rounded-xl shadow-[0_4px_14px_0_rgba(255,87,34,0.39)] transition-all duration-200 
+                        ${(status === 'loading' || !usernameInput.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                    disabled={status === 'loading' || !usernameInput.trim()}
                 >
                     {status === 'loading' && message.includes('Modificando') ? 'Modificando...' : 'Modificar Rol'}
                 </button>
@@ -171,8 +171,8 @@ export default function ModUsers() {
                 <button
                     onClick={handleDeleteAccount}
                     className={`sm:flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all duration-200 
-                        ${status === 'loading' || !userToModify.id ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
-                    disabled={status === 'loading' || !userToModify.id}
+                        ${status === 'loading' || !usernameInput.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                    disabled={status === 'loading' || !usernameInput.trim()}
                 >
                     {status === 'loading' && message.includes('Eliminando') ? 'Eliminando...' : 'Eliminar Cuenta'}
                 </button>
@@ -180,5 +180,17 @@ export default function ModUsers() {
             </div>
             
         </div>
+
+        {/* Botón Flotante Volver */}
+        <button 
+            onClick={() => navigate('/dashboard')}
+            className="fixed bottom-8 right-8 bg-[#FF5722] hover:bg-[#F4511E] text-white p-4 rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95"
+            title="Volver al Dashboard"
+        >
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+
+        </main>
+    </div>
     );
 }

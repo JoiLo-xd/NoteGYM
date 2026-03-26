@@ -14,6 +14,7 @@ const baseMenuItems = [
 ];
 
 const adminMenuItems = [
+    { name: "Añadir Usuario", path: "/admin/AddUser" },
     { name: "Modificar Usuarios", path: "/admin/ModUsers" },
     { name: "Desbloquear Usuarios", path: "/DesbloquearUsers" }
 ];

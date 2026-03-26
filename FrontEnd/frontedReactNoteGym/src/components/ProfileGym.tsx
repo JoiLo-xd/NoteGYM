@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import HeaderGym from "./headerGym";
+import Sidebar from "./Sidebar";
 
 interface UserData {
   name: string;
@@ -15,6 +18,9 @@ const initialData: UserData = {
 };
 
 export default function ProfileGym() {
+  const userRole = (localStorage.getItem('role') as any) || "user";
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<UserData>(initialData);
   const [originalData, setOriginalData] = useState<UserData>(initialData);
 
@@ -97,10 +103,14 @@ export default function ProfileGym() {
   };
 
   return (
-    <div className="pt-24">
-      <div className="profile-page">
-        <div className="profile-card">
-          <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">Mi Perfil</h1>
+    <div className="min-h-screen gym-bg flex flex-col">
+      <HeaderGym />
+      <Sidebar userRole={userRole} />
+
+      <main className="flex-grow pt-24 px-6 pb-10 flex flex-col justify-start items-center">
+        
+        <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl p-8 border border-gray-200 profile-card text-center mb-6 mt-4">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 border-b pb-3 text-[#FF5722]">Mi Perfil</h1>
 
           {message && (
             <div
@@ -216,7 +226,17 @@ export default function ProfileGym() {
             )}
           </form>
         </div>
-      </div>
+
+        {/* Botón Flotante Volver */}
+        <button 
+            onClick={() => navigate('/dashboard')}
+            className="fixed bottom-8 right-8 bg-[#FF5722] hover:bg-[#F4511E] text-white p-4 rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95"
+            title="Volver al Dashboard"
+        >
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+
+      </main>
     </div>
   );
 }

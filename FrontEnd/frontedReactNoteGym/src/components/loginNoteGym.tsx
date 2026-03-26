@@ -44,24 +44,8 @@ export default function LoginNoteGym() {
     setStatus("loading");
     setServerMessage("");
 
-    // --- BLOQUE PARA PRUEBAS (BYPASS) ---
-    // Esto hace que entres directo sin llamar al backend
-    setTimeout(() => {
-      setStatus("success");
-      setServerMessage("¡Modo prueba activo! Entrando...");
-      
-      // Seteamos datos manuales para que el resto de la web no de error
-      localStorage.setItem('token', 'token-de-prueba');
-      localStorage.setItem('username', formData.username || 'Admin');
-      localStorage.setItem('role', 'ADMIN');
-
-      navigate('/dashboard'); 
-    }, 1000);
-    // --- FIN BLOQUE PRUEBAS ---
-    
-    /* COMENTAMOS TU LÓGICA ORIGINAL PARA QUE NO SE EJECUTE
     try {
-      const LOGIN_URL = API_BASE_URL + "/api/user/login";
+      const LOGIN_URL = API_BASE_URL + "/auth/login";
 
       const res = await fetch(LOGIN_URL, { 
         method: "POST",
@@ -71,44 +55,48 @@ export default function LoginNoteGym() {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
-      console.log("Respuesta del backend (Login):", data);
+      const dataText = await res.text();
 
       if (res.ok) {
         // Código HTTP 200-299: Éxito
         setStatus("success");
-        setServerMessage(data.message || "¡Inicio de sesión exitoso!");
-        // Aquí debes guardar el token de autenticación (JWT) si lo hay
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
-        localStorage.setItem('password', data.password);
-        localStorage.setItem('name', data.name);
-        localStorage.setItem('role', data.role);
-
-
-        //alert(localStorage.getItem('username') + " " + localStorage.getItem('password')); // PRUEBA DE ALMACENAMIENTO
+        setServerMessage("¡Inicio de sesión exitoso!");
         
+        // Asignar rol por defecto a 'user'. Para admin temporalmente usamos el botón Bypass inferior
+        localStorage.setItem('role', 'user');
+
+        // Aquí guardamos el token devuelto
+        localStorage.setItem('token', dataText);
+        localStorage.setItem('username', formData.username);
+
         setTimeout(() => {
             navigate('/dashboard'); // Redirige al dashboard
         }, 1500); 
         
       } else {
-        // Código HTTP 4xx o 5xx: Error (credenciales incorrectas, etc.)
         setStatus("error");
-        
-        // El backend debe enviar un mensaje de error claro (ej: 'Usuario o contraseña incorrectos')
-        const errorMessage = data.message || data.error || "Usuario o contraseña incorrectos.";
+        const errorMessage = dataText || "Usuario o contraseña incorrectos.";
         setServerMessage(errorMessage);
         setErrors({ global: errorMessage }); 
       }
     } catch (error) {
-      // Error de red (servidor caído o problema de CORS)
       console.error("Error en la conexión:", error);
       setStatus("error");
       setServerMessage("Error de conexión con el servidor. Inténtalo de nuevo.");
       setErrors({ global: "Error de conexión con el servidor." }); 
     }
-    */
+  };
+
+  const handleAdminBypass = () => {
+    setStatus("success");
+    setServerMessage("¡Modo Admin activo (Bypass)!");
+    localStorage.setItem('role', 'admin');
+    localStorage.setItem('token', 'token-admin-prueba');
+    localStorage.setItem('username', 'Admin-Test');
+    
+    setTimeout(() => {
+        navigate('/dashboard'); 
+    }, 1000);
   };
 
   return (
@@ -191,6 +179,16 @@ export default function LoginNoteGym() {
           }}
         >
           Borrar
+        </Button>
+      </div>
+
+      <div className="mt-2">
+        <Button
+          type="button"
+          className="w-full text-white bg-gray-800 hover:bg-gray-900"
+          onClick={handleAdminBypass}
+        >
+          Entrar como Admin (Prueba)
         </Button>
       </div>
 

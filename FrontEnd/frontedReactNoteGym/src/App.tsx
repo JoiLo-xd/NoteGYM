@@ -8,6 +8,7 @@ import Profile from './components/ProfileGym';
 import DesbloqUsers from './components/admin/DesbloqUsers';
 import ModUsers from './components/admin/ModUsers';
 import RoutinesPage from './components/RoutinesPage';
+import AdminRegisterGym from './components/admin/AdminRegisterGym';
 
 
 function App() {
@@ -22,8 +23,21 @@ function App() {
                 <Route path='/profile' element={<Profile />} />
                 <Route path='/rutinas' element={<RoutinesPage />} />
 
-                <Route path="/admin/ModUsers" element={<ModUsers />} />
-                <Route path="/DesbloquearUsers" element={<DesbloqUsers />} />
+                <Route path="/admin/ModUsers" element={
+                    <ProtectedRoute requiredRole="admin">
+                        <ModUsers />
+                    </ProtectedRoute>
+                } />
+                <Route path="/DesbloquearUsers" element={
+                    <ProtectedRoute requiredRole="admin">
+                        <DesbloqUsers />
+                    </ProtectedRoute>
+                } />
+                <Route path="/admin/AddUser" element={
+                    <ProtectedRoute requiredRole="admin">
+                        <AdminRegisterGym />
+                    </ProtectedRoute>
+                } />
             </Routes>
 
         </BrowserRouter>
