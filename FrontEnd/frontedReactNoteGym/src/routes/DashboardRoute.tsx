@@ -65,7 +65,7 @@ export default function DashboardRoute() {
 
     return (
         <div className="min-h-screen gym-bg flex flex-col">
-            <HeaderGym />
+            <HeaderGym alwaysCompact={true} />
             
             <Sidebar userRole={userRole} /> 
             

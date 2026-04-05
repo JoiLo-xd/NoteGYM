@@ -9,6 +9,7 @@ import DesbloqUsers from './components/admin/DesbloqUsers';
 import ModUsers from './components/admin/ModUsers';
 import RoutinesPage from './components/RoutinesPage';
 import AdminRegisterGym from './components/admin/AdminRegisterGym';
+import TrainPage from './components/TrainPage';
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/dashboard" element={<DashboardRoute />} />
                 <Route path='/profile' element={<Profile />} />
                 <Route path='/rutinas' element={<RoutinesPage />} />
+                <Route path='/entrenar' element={<TrainPage />} />
 
                 <Route path="/admin/ModUsers" element={
                     <ProtectedRoute requiredRole="admin">

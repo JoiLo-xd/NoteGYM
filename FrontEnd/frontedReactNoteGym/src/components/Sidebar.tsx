@@ -9,7 +9,8 @@ interface SidebarProps {
 const baseMenuItems = [
     { name: "Inicio", path: "/dashboard" },
     { name: "Mi Perfil", path: "/profile" },
-    { name: "Mis Rutinas", path: "/routines" },
+    { name: "Mis Rutinas", path: "/rutinas" },
+    { name: "Entrenar", path: "/entrenar" },
     { name: "Estadísticas", path: "/stats" },
 ];
 
