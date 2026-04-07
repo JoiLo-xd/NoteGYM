@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import com.notegym.back.model.User;
+import com.notegym.back.repo.UserRepository;
 
 import com.notegym.back.model.Exercise;
 import com.notegym.back.repo.ExerciseRepository;
@@ -24,6 +28,9 @@ public class ExerciseController {
 
     @Autowired
     private ExerciseRepository exerciseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<List<Exercise>> getAllExercises() {
@@ -44,8 +51,16 @@ public class ExerciseController {
 
     @PostMapping
     public ResponseEntity<Exercise> createExercise(@RequestBody Exercise exercise) {
-        Exercise savedExercise = exerciseRepository.save(exercise);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedExercise);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        
+        if (userOpt.isPresent()) {
+            exercise.setUser(userOpt.get());
+            Exercise savedExercise = exerciseRepository.save(exercise);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedExercise);
+        }
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @PutMapping("/{id}")

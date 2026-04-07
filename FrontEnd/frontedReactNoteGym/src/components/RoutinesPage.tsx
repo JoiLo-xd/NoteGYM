@@ -38,37 +38,9 @@ const mapApiWorkout = (w: Workout): Routine => ({
   isGlobal: false
 });
 
-const GLOBAL_EXERCISES: Exercise[] = [
-  { id: "e1", name: "Press Banca", muscle: "Pecho", equipment: "Barra" },
-  { id: "e2", name: "Sentadilla Libre", muscle: "Pierna", equipment: "Barra" },
-  { id: "e3", name: "Dominadas", muscle: "Espalda", equipment: "Peso Corporal" },
-  { id: "e4", name: "Curl Bíceps", muscle: "Bíceps", equipment: "Mancuernas" },
-  { id: "e5", name: "Press Militar", muscle: "Hombro", equipment: "Barra" }
-];
+const GLOBAL_EXERCISES: Exercise[] = [];
 
-const GLOBAL_ROUTINES: Routine[] = [
-  { 
-    id: "g1", 
-    name: "Push Day", 
-    description: "Entrenamiento de empuje centrado en hipertrofia y fuerza.",
-    exercises: [GLOBAL_EXERCISES[0], GLOBAL_EXERCISES[4]],
-    isGlobal: true
-  },
-  { 
-    id: "g2", 
-    name: "Pull Day", 
-    description: "Entrenamiento de tracción enfocado en espalda y bíceps.",
-    exercises: [GLOBAL_EXERCISES[2], GLOBAL_EXERCISES[3]],
-    isGlobal: true
-  },
-  { 
-    id: "g3", 
-    name: "Leg Day", 
-    description: "Trabajo completo de tren inferior para fuerza.",
-    exercises: [GLOBAL_EXERCISES[1]],
-    isGlobal: true
-  }
-];
+const GLOBAL_ROUTINES: Routine[] = [];
 
 export default function RoutinesPage() {
   const navigate = useNavigate();
@@ -244,7 +216,7 @@ export default function RoutinesPage() {
     });
   };
 
-  const allExercises = [...GLOBAL_EXERCISES, ...customExercises];
+  const allExercises = [...customExercises];
 
   return (
     <div className="min-h-screen gym-bg flex flex-col">

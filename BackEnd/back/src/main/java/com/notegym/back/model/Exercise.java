@@ -13,6 +13,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -67,6 +68,7 @@ public class Exercise  implements java.io.Serializable {
         this.id = id;
     }
 
+@JsonIgnore
 @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="creator", nullable=false)
     public User getUser() {
@@ -137,6 +139,7 @@ public class Exercise  implements java.io.Serializable {
         this.name = name;
     }
 
+@JsonIgnore
 @ManyToMany(fetch=FetchType.LAZY)
     @JoinTable(name="workout_exercise", catalog="notegym", joinColumns = { 
         @JoinColumn(name="exersice_id", nullable=false) }, inverseJoinColumns = { 
@@ -149,6 +152,7 @@ public class Exercise  implements java.io.Serializable {
         this.workouts = workouts;
     }
 
+@JsonIgnore
 @ManyToMany(fetch=FetchType.LAZY)
     @JoinTable(name="user_exercise", catalog="notegym", joinColumns = { 
         @JoinColumn(name="exercise_id", nullable=false) }, inverseJoinColumns = { 
