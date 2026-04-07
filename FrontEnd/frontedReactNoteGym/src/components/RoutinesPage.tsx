@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ContinuousCalendar } from "./ContinuousCalendar";
 import HeaderGym from "./headerGym";
 import Sidebar from "./Sidebar";
+import { apiService } from "../services/api";
+import type { Exercise as ApiExercise, Workout } from "../services/api";
+import { useSnack } from "./SnackProvider";
 
 interface Exercise {
   id: string;
@@ -18,6 +21,22 @@ interface Routine {
   exercises: Exercise[];
   isGlobal: boolean;
 }
+
+// Funciones para mapear datos del back
+const mapApiExercise = (ex: ApiExercise): Exercise => ({
+  id: String(ex.id),
+  name: ex.name,
+  muscle: ex.type || "",
+  equipment: ex.description || ""
+});
+
+const mapApiWorkout = (w: Workout): Routine => ({
+  id: String(w.id),
+  name: w.name,
+  description: w.description,
+  exercises: (w.exercises || []).map(mapApiExercise),
+  isGlobal: false
+});
 
 const GLOBAL_EXERCISES: Exercise[] = [
   { id: "e1", name: "Press Banca", muscle: "Pecho", equipment: "Barra" },
@@ -53,20 +72,33 @@ const GLOBAL_ROUTINES: Routine[] = [
 
 export default function RoutinesPage() {
   const navigate = useNavigate();
+  const { createSnack } = useSnack();
 
   // Estados persistentes
   const [assignedRoutines, setAssignedRoutines] = useState<Record<string, Routine[]>>(() => {
     const saved = localStorage.getItem("user_assigned_routines");
     return saved ? JSON.parse(saved) : {};
   });
-  const [customExercises, setCustomExercises] = useState<Exercise[]>(() => {
-    const saved = localStorage.getItem("user_custom_exercises");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [customRoutines, setCustomRoutines] = useState<Routine[]>(() => {
-    const saved = localStorage.getItem("user_custom_routines");
-    return saved ? JSON.parse(saved) : [];
-  });
+
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [customRoutines, setCustomRoutines] = useState<Routine[]>([]);
+
+  // Cargar datos
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [apiExercises, apiWorkouts] = await Promise.all([
+          apiService.getExercises(),
+          apiService.getWorkouts()
+        ]);
+        setCustomExercises(apiExercises.map(mapApiExercise));
+        setCustomRoutines(apiWorkouts.map(mapApiWorkout));
+      } catch (err) {
+        console.error("Error cargando datos del backend:", err);
+      }
+    };
+    loadData();
+  }, []);
 
   // Estados UI
   const [activeTab, setActiveTab] = useState<"globales" | "personales" | "ejercicios">("globales");
@@ -99,7 +131,7 @@ export default function RoutinesPage() {
     const alreadyAssigned = routinesOnDay.some(r => r.id === selectedRoutine.id);
     
     if (alreadyAssigned) {
-      alert("¡Este entrenamiento ya está asignado a este día!");
+      createSnack("¡Este entrenamiento ya está asignado a este día!", "error");
       return;
     }
 
@@ -109,36 +141,97 @@ export default function RoutinesPage() {
     setIsAssignModalOpen(false);
     setSelectedRoutine(null);
     setAssignDate("");
-    alert(`¡Rutina asignada correctamente!`);
+    createSnack("¡Rutina asignada correctamente al calendario!", "success");
   };
 
-  const handleSaveExercise = () => {
+  const handleSaveExercise = async () => {
     if(!exForm.name) return;
-    const newEx: Exercise = { id: Date.now().toString(), name: exForm.name, muscle: exForm.muscle, equipment: exForm.equipment };
-    const updatedEx = [...customExercises, newEx];
-    setCustomExercises(updatedEx);
-    localStorage.setItem("user_custom_exercises", JSON.stringify(updatedEx));
-    setIsExerciseModalOpen(false);
-    setExForm({ name: "", muscle: "", equipment: "" });
+    try {
+      const savedEx = await apiService.createExercise({
+        name: exForm.name,
+        type: exForm.muscle,
+        description: exForm.equipment,
+        videoUrl: "",
+        imagePath: "",
+        durationTime: 0
+      });
+      const newEx = mapApiExercise(savedEx);
+      const updatedEx = [...customExercises, newEx];
+      setCustomExercises(updatedEx);
+      setIsExerciseModalOpen(false);
+      setExForm({ name: "", muscle: "", equipment: "" });
+      createSnack("Ejercicio creado con éxito", "success");
+    } catch (err) {
+      console.error(err);
+      createSnack("Error creando ejercicio en el servidor", "error");
+    }
   };
 
-  const handleSaveRoutine = () => {
+  const handleSaveRoutine = async () => {
     if(!routForm.name || routForm.selectedExercises.length === 0) {
       alert("Por favor, introduce un nombre y selecciona al menos un ejercicio.");
       return;
     }
-    const newRoutine: Routine = {
-      id: Date.now().toString(),
-      name: routForm.name,
-      description: routForm.description,
-      exercises: routForm.selectedExercises,
-      isGlobal: false
-    };
-    const updated = [...customRoutines, newRoutine];
-    setCustomRoutines(updated);
-    localStorage.setItem("user_custom_routines", JSON.stringify(updated));
-    setIsRoutineModalOpen(false);
-    setRoutForm({ name: "", description: "", selectedExercises: [] });
+    try {
+      const savedWorkout = await apiService.createWorkout({ // Primero creamos el workout
+        name: routForm.name,
+        description: routForm.description,
+        exercises: []
+      });
+
+      // Luego añadimos los ejercicios uno a uno
+      for (const ex of routForm.selectedExercises) {
+        await apiService.addExerciseToWorkout(savedWorkout.id!, ex.id);
+      }
+
+      // Volvemos a obtener ambos o reconstruimos localmente
+      const newRoutine: Routine = {
+        id: String(savedWorkout.id),
+        name: routForm.name,
+        description: routForm.description,
+        exercises: routForm.selectedExercises,
+        isGlobal: false
+      };
+      
+      const updated = [...customRoutines, newRoutine];
+      setCustomRoutines(updated);
+      setIsRoutineModalOpen(false);
+      setRoutForm({ name: "", description: "", selectedExercises: [] });
+      createSnack("Rutina creada correctamente", "success");
+    } catch (err) {
+      console.error(err);
+      createSnack("Error creando la rutina", "error");
+    }
+  };
+
+  const handleDeleteExercise = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (id.startsWith("e")) {
+      createSnack("No puedes borrar un ejercicio global del sistema.", "error");
+      return;
+    }
+    if(!window.confirm("¿Seguro que deseas eliminar este ejercicio?")) return;
+    try {
+      await apiService.deleteExercise(id);
+      setCustomExercises(prev => prev.filter(ex => ex.id !== id));
+      createSnack("Ejercicio eliminado", "success");
+    } catch(err) {
+      console.error(err);
+      createSnack("No se pudo eliminar el ejercicio", "error");
+    }
+  };
+
+  const handleDeleteRoutine = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if(!window.confirm("¿Seguro que deseas eliminar este entrenamiento?")) return;
+    try {
+      await apiService.deleteWorkout(Number(id));
+      setCustomRoutines(prev => prev.filter(r => r.id !== id));
+      createSnack("Rutina eliminada", "success");
+    } catch(err) {
+      console.error(err);
+      createSnack("No se pudo eliminar el entrenamiento", "error");
+    }
   };
 
   const toggleSelectExerciseForRoutine = (ex: Exercise) => {
@@ -202,12 +295,21 @@ export default function RoutinesPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {allExercises.map(ex => (
-                  <div key={ex.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                    <span className="text-[#FF5722] font-bold text-lg mb-1">{ex.name}</span>
+                  <div key={ex.id} className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative transition hover:shadow-md hover:border-[#FF5722]/50">
+                    <span className="text-[#FF5722] font-bold text-lg mb-1 pr-6">{ex.name}</span>
                     <span className="text-gray-500 text-sm mb-2">Musculo: {ex.muscle || "General"}</span>
-                    <span className="text-gray-400 text-xs bg-gray-50 p-2 rounded-lg mt-auto text-center border border-gray-100">
+                    <span className="text-gray-400 text-xs bg-gray-50 p-2 rounded-lg mt-auto text-center border border-gray-100 truncate" title={ex.equipment}>
                       Equipo: {ex.equipment || "No especificado"}
                     </span>
+                    {!ex.id.startsWith("e") && (
+                      <button 
+                        onClick={(e) => handleDeleteExercise(ex.id, e)}
+                        className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition duration-200 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg"
+                        title="Eliminar ejercicio"
+                      >
+                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -236,12 +338,21 @@ export default function RoutinesPage() {
                   <p className="text-gray-500 italic col-span-full">No tienes entrenamientos {activeTab} todavía.</p>
                 ) : (
                   (activeTab === "globales" ? GLOBAL_ROUTINES : customRoutines).map(routine => (
-                    <div key={routine.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition flex flex-col h-full">
+                    <div key={routine.id} className="group bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-[#FF5722]/30 transition flex flex-col h-full relative">
+                      {activeTab === "personales" && (
+                        <button 
+                          onClick={(e) => handleDeleteRoutine(routine.id, e)}
+                          className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition duration-200 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-xl"
+                          title="Eliminar entrenamiento"
+                        >
+                          <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
                       <div className="flex-1">
                         <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-[#FF5722] mb-4">
                           <svg className="size-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z"/></svg>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">{routine.name}</h3>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2 pr-8">{routine.name}</h3>
                         <p className="text-gray-600 text-sm mb-4 leading-relaxed">{routine.description}</p>
                         
                         <div className="mb-6">

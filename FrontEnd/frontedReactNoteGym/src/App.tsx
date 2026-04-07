@@ -10,38 +10,42 @@ import ModUsers from './components/admin/ModUsers';
 import RoutinesPage from './components/RoutinesPage';
 import AdminRegisterGym from './components/admin/AdminRegisterGym';
 import TrainPage from './components/TrainPage';
+import ForumPage from './components/ForumPage';
+import { SnackProvider } from './components/SnackProvider';
 
 
 function App() {
     return (
         <BrowserRouter>
-            <Routes>
-                <Route path="/loginUserGym" element={<LoginUser />} />
-                <Route path="/newUserGym" element={<RegisterUser />} />
-                <Route path="/" element={<LoginUser />} />
+            <SnackProvider>
+                <Routes>
+                    <Route path="/loginUserGym" element={<LoginUser />} />
+                    <Route path="/newUserGym" element={<RegisterUser />} />
+                    <Route path="/" element={<LoginUser />} />
 
-                <Route path="/dashboard" element={<DashboardRoute />} />
-                <Route path='/profile' element={<Profile />} />
-                <Route path='/rutinas' element={<RoutinesPage />} />
-                <Route path='/entrenar' element={<TrainPage />} />
+                    <Route path="/dashboard" element={<DashboardRoute />} />
+                    <Route path='/profile' element={<Profile />} />
+                    <Route path='/rutinas' element={<RoutinesPage />} />
+                    <Route path='/entrenar' element={<TrainPage />} />
+                    <Route path='/comunidad' element={<ForumPage />} />
 
-                <Route path="/admin/ModUsers" element={
-                    <ProtectedRoute requiredRole="admin">
-                        <ModUsers />
-                    </ProtectedRoute>
-                } />
-                <Route path="/DesbloquearUsers" element={
-                    <ProtectedRoute requiredRole="admin">
-                        <DesbloqUsers />
-                    </ProtectedRoute>
-                } />
-                <Route path="/admin/AddUser" element={
-                    <ProtectedRoute requiredRole="admin">
-                        <AdminRegisterGym />
-                    </ProtectedRoute>
-                } />
-            </Routes>
-
+                    <Route path="/admin/ModUsers" element={
+                        <ProtectedRoute requiredRole="admin">
+                            <ModUsers />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/DesbloquearUsers" element={
+                        <ProtectedRoute requiredRole="admin">
+                            <DesbloqUsers />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/admin/AddUser" element={
+                        <ProtectedRoute requiredRole="admin">
+                            <AdminRegisterGym />
+                        </ProtectedRoute>
+                    } />
+                </Routes>
+            </SnackProvider>
         </BrowserRouter>
     )
 

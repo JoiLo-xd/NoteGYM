@@ -1,10 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ContinuousCalendar } from "@/components/ContinuousCalendar";
+import { useSnack } from "./SnackProvider";
 
 interface DashboardGymProps {
   userRole?: "admin" | "user" | "trainer";
   userName?: string;
+}
+
+interface Routine {
+  id: string;
+  name: string;
+  description: string;
+  exercises: { name: string }[];
 }
 
 const monthNames = [
@@ -14,22 +22,22 @@ const monthNames = [
 
 export default function DashboardGym({ userRole: propsRole, userName: propsName }: DashboardGymProps) {
   const userName = propsName || localStorage.getItem('username') || "Usuario de Prueba";
-  const userRole = propsRole || (localStorage.getItem('role') as any) || "admin";
+  const userRole = propsRole || (localStorage.getItem('role') as "admin" | "user" | "trainer" | null) || "admin";
+  const { createSnack } = useSnack();
 
   const welcomeMessage = `👋 Bienvenid@ ${userName}`;
 
   // Estados del panel de día
   const [selectedDate, setSelectedDate] = useState<{ day: number; month: number; year: number } | null>(null);
-  const [assignedRoutines, setAssignedRoutines] = useState<Record<string, any[]>>({});
+  const [assignedRoutines, setAssignedRoutines] = useState<Record<string, Routine[]>>(() => {
+    const saved = localStorage.getItem('user_assigned_routines');
+    return saved ? JSON.parse(saved) : {};
+  });
   
   const navigate = useNavigate();
 
-  // Cargar datos
+  // Opcional: recargar en background si hay cambios en localStorage para mantener en sync
   useEffect(() => {
-    const savedRoutines = localStorage.getItem('user_assigned_routines');
-    if (savedRoutines) setAssignedRoutines(JSON.parse(savedRoutines));
-    
-    // Optional: reload mechanism if we switch tabs back to Dashboard
     const interval = setInterval(() => {
         const sr = localStorage.getItem('user_assigned_routines');
         if(sr) setAssignedRoutines(JSON.parse(sr));
@@ -58,6 +66,7 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     
     setAssignedRoutines(updatedRoutines);
     localStorage.setItem('user_assigned_routines', JSON.stringify(updatedRoutines));
+    createSnack("Entrenamiento retirado del día seleccionado", "success");
   };
 
   return (
@@ -70,13 +79,13 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
           <div className="mt-4 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
              <button 
               onClick={() => navigate('/entrenar')}
-              className="px-8 py-4 rounded-xl bg-green-500 text-white font-black text-xl hover:bg-green-600 transition shadow-lg hover:-translate-y-1 hover:shadow-xl flex-1 flex items-center justify-center gap-2 uppercase tracking-wide"
+              className="px-8 py-4 rounded-xl bg-gray-900 text-white font-black text-xl hover:bg-gray-800 transition shadow-lg hover:-translate-y-1 hover:shadow-xl flex-1 flex items-center justify-center gap-2 uppercase tracking-wide border border-gray-800"
             >
               🏋️‍♂️ ¡IR A ENTRENAR!
             </button>
             <button 
               onClick={() => navigate('/rutinas')}
-              className="px-6 py-4 rounded-xl bg-[#FF5722] text-white font-bold hover:bg-[#F4511E] transition shadow-md hover:-translate-y-1 hover:shadow-lg flex-1 flex items-center justify-center gap-2"
+              className="px-6 py-4 rounded-xl bg-[#FF5722] text-white font-bold text-xl hover:bg-[#F4511E] transition shadow-md hover:-translate-y-1 hover:shadow-lg flex-1 flex items-center justify-center gap-2 uppercase tracking-wide"
             >
               🚀 Gestionar
             </button>
@@ -134,7 +143,7 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
                               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 line-clamp-1">Ejercicios ({rutina.exercises?.length || 0})</p>
                               {rutina.exercises && rutina.exercises.length > 0 ? (
                                 <ul className="text-gray-600 text-[11px] font-medium space-y-1 list-inside list-disc">
-                                  {rutina.exercises.map((ex: any, i: number) => (
+                                  {rutina.exercises.map((ex, i) => (
                                     <li key={i}>{ex.name}</li>
                                   ))}
                                 </ul>
@@ -176,6 +185,18 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
         </div>
 
       </div>
+
+      {/* Botón flotante del Foro/Comunidad */}
+      <button
+        onClick={() => navigate('/comunidad')}
+        className="fixed bottom-8 left-8 w-16 h-16 bg-[#FF5722] hover:bg-[#F4511E] text-white rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95 border border-orange-400"
+        title="Comunidad"
+      >
+        <svg className="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </button>
+
     </div>
   );
 }

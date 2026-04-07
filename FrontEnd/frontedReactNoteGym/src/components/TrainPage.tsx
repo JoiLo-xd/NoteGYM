@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import HeaderGym from "./headerGym";
 import Sidebar from "./Sidebar";
+import { apiService } from "../services/api";
+import type { Exercise as ApiExercise, Workout } from "../services/api";
 
 interface Exercise {
   id: string;
@@ -49,12 +52,37 @@ const GLOBAL_ROUTINES: Routine[] = [
   }
 ];
 
+// Funciones para mapear datos del back
+const mapApiExercise = (ex: ApiExercise): Exercise => ({
+  id: String(ex.id),
+  name: ex.name,
+  muscle: ex.type || "",
+  equipment: ex.description || ""
+});
+
+const mapApiWorkout = (w: Workout): Routine => ({
+  id: String(w.id),
+  name: w.name,
+  description: w.description,
+  exercises: (w.exercises || []).map(mapApiExercise),
+  isGlobal: false
+});
+
 export default function TrainPage() {
-  const [allRoutines] = useState<Routine[]>(() => {
-    const savedCustomRout = localStorage.getItem("user_custom_routines");
-    const customRoutines = savedCustomRout ? JSON.parse(savedCustomRout) : [];
-    return [...GLOBAL_ROUTINES, ...customRoutines];
-  });
+  const navigate = useNavigate();
+  const [allRoutines, setAllRoutines] = useState<Routine[]>(GLOBAL_ROUTINES);
+  
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const apiWorkouts = await apiService.getWorkouts();
+        setAllRoutines([...GLOBAL_ROUTINES, ...apiWorkouts.map(mapApiWorkout)]);
+      } catch (err) {
+        console.error("Error cargando rutinas:", err);
+      }
+    };
+    loadData();
+  }, []);
   const [todayRoutines] = useState<Routine[]>(() => {
     const savedAssigned = localStorage.getItem("user_assigned_routines");
     if (savedAssigned) {
@@ -224,6 +252,16 @@ export default function TrainPage() {
 
           </div>
         </main>
+
+        {/* Botón Flotante Volver */}
+        <button 
+            onClick={() => navigate('/dashboard')}
+            className="fixed bottom-8 right-8 bg-[#FF5722] hover:bg-[#F4511E] text-white p-4 rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95"
+            title="Volver al Dashboard"
+        >
+            <svg className="w-7 h-7 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+
       </div>
     );
   }

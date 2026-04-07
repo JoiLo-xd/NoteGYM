@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // 1. Definimos los tipos de props que recibirá el componente
@@ -11,6 +11,7 @@ const baseMenuItems = [
     { name: "Mi Perfil", path: "/profile" },
     { name: "Mis Rutinas", path: "/rutinas" },
     { name: "Entrenar", path: "/entrenar" },
+    { name: "Comunidad", path: "/comunidad" },
     { name: "Estadísticas", path: "/stats" },
 ];
 
@@ -22,7 +23,18 @@ const adminMenuItems = [
 
 export default function Sidebar({ userRole }: SidebarProps) { 
     const [isOpen, setIsOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const navigate = useNavigate();
+
+    const SCROLL_THRESHOLD = 50; 
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > SCROLL_THRESHOLD);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
@@ -42,7 +54,8 @@ export default function Sidebar({ userRole }: SidebarProps) {
     return (
         <>
             <div 
-                className={`fixed top-4 left-4 z-50 transition-transform duration-300 ease-in-out 
+                className={`fixed left-4 z-50 transition-all duration-300 ease-in-out 
+                    ${isScrolled ? 'top-1' : 'top-2'}
                     ${isOpen ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`
                 }
             >
