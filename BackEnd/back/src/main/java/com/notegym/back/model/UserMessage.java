@@ -1,5 +1,5 @@
 package com.notegym.back.model;
-// Generated 23 mar 2026, 16:43:44 by Hibernate Tools 6.4.8.Final
+// Generated 7 abr 2026, 15:26:14 by Hibernate Tools 6.4.8.Final
 
 
 import jakarta.persistence.AttributeOverride;

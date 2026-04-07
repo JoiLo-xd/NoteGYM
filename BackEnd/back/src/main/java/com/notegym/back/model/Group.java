@@ -1,5 +1,5 @@
 package com.notegym.back.model;
-// Generated 23 mar 2026, 16:43:44 by Hibernate Tools 6.4.8.Final
+// Generated 7 abr 2026, 15:26:14 by Hibernate Tools 6.4.8.Final
 
 
 import jakarta.persistence.Column;
@@ -29,7 +29,7 @@ public class Group  implements java.io.Serializable {
      private String name;
      private String description;
      private Timestamp creationdate;
-     private Set userGroups = new HashSet(0);
+     private Set<UserGroup> userGroups = new HashSet<>();
 
     public Group() {
     }
@@ -39,7 +39,7 @@ public class Group  implements java.io.Serializable {
         this.name = name;
         this.creationdate = creationdate;
     }
-    public Group(String name, String description, Timestamp creationdate, Set userGroups) {
+    public Group(String name, String description, Timestamp creationdate, Set<UserGroup> userGroups) {
        this.name = name;
        this.description = description;
        this.creationdate = creationdate;
@@ -89,11 +89,11 @@ public class Group  implements java.io.Serializable {
     }
 
 @OneToMany(fetch=FetchType.LAZY, mappedBy="group")
-    public Set getUserGroups() {
+    public Set<UserGroup> getUserGroups() {
         return this.userGroups;
     }
     
-    public void setUserGroups(Set userGroups) {
+    public void setUserGroups(Set<UserGroup> userGroups) {
         this.userGroups = userGroups;
     }
 

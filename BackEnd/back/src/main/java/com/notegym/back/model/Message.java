@@ -1,5 +1,5 @@
 package com.notegym.back.model;
-// Generated 23 mar 2026, 16:43:44 by Hibernate Tools 6.4.8.Final
+// Generated 7 abr 2026, 15:26:14 by Hibernate Tools 6.4.8.Final
 
 
 import jakarta.persistence.Column;
@@ -32,7 +32,7 @@ public class Message  implements java.io.Serializable {
      private String content;
      private Timestamp sentAt;
      private int groupId;
-     private Set userMessages = new HashSet(0);
+     private Set<UserMessage> userMessages = new HashSet<>();
 
     public Message() {
     }
@@ -43,7 +43,7 @@ public class Message  implements java.io.Serializable {
         this.content = content;
         this.groupId = groupId;
     }
-    public Message(User user, String content, Timestamp sentAt, int groupId, Set userMessages) {
+    public Message(User user, String content, Timestamp sentAt, int groupId, Set<UserMessage> userMessages) {
        this.user = user;
        this.content = content;
        this.sentAt = sentAt;
@@ -104,11 +104,11 @@ public class Message  implements java.io.Serializable {
     }
 
 @OneToMany(fetch=FetchType.LAZY, mappedBy="message")
-    public Set getUserMessages() {
+    public Set<UserMessage> getUserMessages() {
         return this.userMessages;
     }
     
-    public void setUserMessages(Set userMessages) {
+    public void setUserMessages(Set<UserMessage> userMessages) {
         this.userMessages = userMessages;
     }
 

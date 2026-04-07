@@ -1,5 +1,5 @@
 package com.notegym.back.model;
-// Generated 23 mar 2026, 16:43:44 by Hibernate Tools 6.4.8.Final
+// Generated 7 abr 2026, 15:26:14 by Hibernate Tools 6.4.8.Final
 
 
 import jakarta.persistence.Column;
@@ -29,8 +29,8 @@ public class Workout  implements java.io.Serializable {
      private User user;
      private String description;
      private String name;
-     private Set users = new HashSet(0);
-     private Set exercises = new HashSet(0);
+     private Set<User> users = new HashSet<>();
+     private Set<Exercise> exercises = new HashSet<>();
 
     public Workout() {
     }
@@ -40,7 +40,7 @@ public class Workout  implements java.io.Serializable {
         this.user = user;
         this.name = name;
     }
-    public Workout(User user, String description, String name, Set users, Set exercises) {
+    public Workout(User user, String description, String name, Set<User> users, Set<Exercise> exercises) {
        this.user = user;
        this.description = description;
        this.name = name;
@@ -92,25 +92,25 @@ public class Workout  implements java.io.Serializable {
 
 @ManyToMany(fetch=FetchType.LAZY)
     @JoinTable(name="user_workout", catalog="notegym", joinColumns = { 
-        @JoinColumn(name="workout_id", nullable=false, updatable=false) }, inverseJoinColumns = { 
-        @JoinColumn(name="user_id", nullable=false, updatable=false) })
-    public Set getUsers() {
+        @JoinColumn(name="workout_id", nullable=false) }, inverseJoinColumns = { 
+        @JoinColumn(name="user_id", nullable=false) })
+    public Set<User> getUsers() {
         return this.users;
     }
     
-    public void setUsers(Set users) {
+    public void setUsers(Set<User> users) {
         this.users = users;
     }
 
 @ManyToMany(fetch=FetchType.LAZY)
     @JoinTable(name="workout_exercise", catalog="notegym", joinColumns = { 
-        @JoinColumn(name="workout_id", nullable=false, updatable=false) }, inverseJoinColumns = { 
-        @JoinColumn(name="exersice_id", nullable=false, updatable=false) })
-    public Set getExercises() {
+        @JoinColumn(name="workout_id", nullable=false) }, inverseJoinColumns = { 
+        @JoinColumn(name="exersice_id", nullable=false) })
+    public Set<Exercise> getExercises() {
         return this.exercises;
     }
     
-    public void setExercises(Set exercises) {
+    public void setExercises(Set<Exercise> exercises) {
         this.exercises = exercises;
     }
 
