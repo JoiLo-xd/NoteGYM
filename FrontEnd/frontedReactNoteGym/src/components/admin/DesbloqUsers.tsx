@@ -49,8 +49,7 @@ export default function DesbloqUsers() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'username': adminUsername, 
-                'password': adminPassword,
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
             body: JSON.stringify({
                 username: adminUsername, 
@@ -121,19 +120,7 @@ export default function DesbloqUsers() {
 };
     
     // Función de ayuda para renderizar los mensajes
-    const FeedbackMessage = () => {
-        if (status === 'idle') return null;
-        
-        const baseClass = "p-3 rounded-lg text-sm text-center font-medium my-4 shadow-sm";
-        const successClass = "bg-green-100 border border-green-400 text-green-700";
-        const errorClass = "bg-red-100 border border-red-400 text-red-700 animate-pulse";
-        
-        return (
-            <div className={`${baseClass} ${status === 'success' ? successClass : errorClass}`}>
-                {serverMessage}
-            </div>
-        );
-    };
+
 
     return (
         <div className="min-h-screen gym-bg flex flex-col">
@@ -147,7 +134,11 @@ export default function DesbloqUsers() {
                         Desbloquear Usuario
                     </h2>
 
-            <FeedbackMessage />
+            {status !== 'idle' && (
+                <div className={`p-3 rounded-lg text-sm text-center font-medium my-4 shadow-sm ${status === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700 animate-pulse'}`}>
+                    {serverMessage}
+                </div>
+            )}
 
             <form onSubmit={handleUnlock} className="space-y-6">
                 

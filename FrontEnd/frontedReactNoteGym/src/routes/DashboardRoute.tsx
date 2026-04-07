@@ -36,8 +36,7 @@ export default function DashboardRoute() {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'username': localStorage.getItem('username') || "",
-                        'password': localStorage.getItem('password') || "",
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     },
                 });
 

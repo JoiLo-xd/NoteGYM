@@ -62,16 +62,30 @@ export default function LoginNoteGym() {
         setStatus("success");
         setServerMessage("¡Inicio de sesión exitoso!");
         
-        // Asignar rol por defecto a 'user'. Para admin temporalmente usamos el botón Bypass inferior
-        localStorage.setItem('role', 'user');
-
         // Aquí guardamos el token devuelto
         localStorage.setItem('token', dataText);
         localStorage.setItem('username', formData.username);
 
+        // Fetch user profile to get the actual role
+        try {
+            const perfilRes = await fetch(API_BASE_URL + "/api/user/perfil", {
+                headers: {
+                    "Authorization": `Bearer ${dataText}`
+                }
+            });
+            if (perfilRes.ok) {
+                const perfilData = await perfilRes.json();
+                localStorage.setItem('role', perfilData.role ? perfilData.role.toLowerCase() : 'user');
+            } else {
+                localStorage.setItem('role', 'user');
+            }
+        } catch(e) {
+            localStorage.setItem('role', 'user');
+        }
+
         setTimeout(() => {
             navigate('/dashboard'); // Redirige al dashboard
-        }, 1500); 
+        }, 1500);
         
       } else {
         setStatus("error");
@@ -87,17 +101,7 @@ export default function LoginNoteGym() {
     }
   };
 
-  const handleAdminBypass = () => {
-    setStatus("success");
-    setServerMessage("¡Modo Admin activo (Bypass)!");
-    localStorage.setItem('role', 'admin');
-    localStorage.setItem('token', 'token-admin-prueba');
-    localStorage.setItem('username', 'Admin-Test');
-    
-    setTimeout(() => {
-        navigate('/dashboard'); 
-    }, 1000);
-  };
+
 
   return (
     <form
@@ -182,15 +186,7 @@ export default function LoginNoteGym() {
         </Button>
       </div>
 
-      <div className="mt-2">
-        <Button
-          type="button"
-          className="w-full text-white bg-gray-800 hover:bg-gray-900"
-          onClick={handleAdminBypass}
-        >
-          Entrar como Admin (Prueba)
-        </Button>
-      </div>
+
 
       <div className="mt-4 text-center">
     <span className="text-gray-600">  ¿No tienes una cuenta? </span><br/>

@@ -1,5 +1,16 @@
 export const API_BASE_URL = "http://localhost:8080/api";
 
+const getHeaders = (isJson = false): HeadersInit => {
+  const token = localStorage.getItem('token');
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token}`
+  };
+  if (isJson) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return headers;
+};
+
 export interface Exercise {
   id?: number | string;
   name: string;
@@ -20,7 +31,7 @@ export interface Workout {
 export const apiService = {
   // Ejercicios
   getExercises: async (): Promise<Exercise[]> => {
-    const res = await fetch(`${API_BASE_URL}/exercises`);
+    const res = await fetch(`${API_BASE_URL}/exercises`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error fetching exercises");
     return res.json();
   },
@@ -28,7 +39,7 @@ export const apiService = {
   createExercise: async (exercise: Partial<Exercise>): Promise<Exercise> => {
     const res = await fetch(`${API_BASE_URL}/exercises`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(true),
       body: JSON.stringify(exercise),
     });
     if (!res.ok) throw new Error("Error creating exercise");
@@ -38,13 +49,14 @@ export const apiService = {
   deleteExercise: async (id: number | string): Promise<void> => {
     const res = await fetch(`${API_BASE_URL}/exercises/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Error deleting exercise");
   },
 
   // Workouts
   getWorkouts: async (): Promise<Workout[]> => {
-    const res = await fetch(`${API_BASE_URL}/workouts`);
+    const res = await fetch(`${API_BASE_URL}/workouts`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error fetching workouts");
     return res.json();
   },
@@ -52,7 +64,7 @@ export const apiService = {
   createWorkout: async (workout: Partial<Workout>): Promise<Workout> => {
     const res = await fetch(`${API_BASE_URL}/workouts`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(true),
       body: JSON.stringify(workout),
     });
     if (!res.ok) throw new Error("Error creating workout");
@@ -62,6 +74,7 @@ export const apiService = {
   addExerciseToWorkout: async (workoutId: number, exerciseId: number | string): Promise<Workout> => {
     const res = await fetch(`${API_BASE_URL}/workouts/${workoutId}/exercises/${exerciseId}`, {
       method: "POST",
+      headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Error adding exercise to workout");
     return res.json();
@@ -70,6 +83,7 @@ export const apiService = {
   deleteWorkout: async (id: number): Promise<void> => {
     const res = await fetch(`${API_BASE_URL}/workouts/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Error deleting workout");
   }
