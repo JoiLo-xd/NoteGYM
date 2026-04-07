@@ -38,9 +38,21 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick, dotsMap =
   };
 
   const handleDayClick = (day: number, monthIdx: number, yearValue: number, createNote: boolean = false) => {
-    setSelectedDay({ day, month: monthIdx, year: yearValue });
+    // Normalize month and year if they are out of bounds (e.g., monthIdx = -1 or 12)
+    const normalizedDate = new Date(yearValue, monthIdx, day);
+    const normalizedDay = normalizedDate.getDate();
+    const normalizedMonth = normalizedDate.getMonth();
+    const normalizedYear = normalizedDate.getFullYear();
+
+    setSelectedDay({ day: normalizedDay, month: normalizedMonth, year: normalizedYear });
+
+    // Update current view if it's a different month
+    if (normalizedMonth !== currentDate.getMonth() || normalizedYear !== currentDate.getFullYear()) {
+      setCurrentDate(new Date(normalizedYear, normalizedMonth, 1));
+    }
+
     if (onClick) {
-      onClick(day, monthIdx, yearValue, createNote);
+      onClick(normalizedDay, normalizedMonth, normalizedYear, createNote);
     }
   };
 
@@ -139,16 +151,12 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick, dotsMap =
 
             // Ajustar el mes (puede ser -1 que significa diciembre del año pasado, o 12 que es enero del año que viene)
             // Date() se encargará de esto si se lo pasamos en new Date(), pero aquí lo normalizamos para el onClick / selectedDay
-            let finalMonth = cell.month;
-            if (finalMonth < 0) finalMonth = 11;
-            else if (finalMonth > 11) finalMonth = 0;
-
-            const isSelected = selectedDay?.day === cell.day && selectedDay?.month === finalMonth && selectedDay?.year === cell.year;
+            const isSelected = selectedDay?.day === cell.day && selectedDay?.month === (cell.month < 0 ? 11 : cell.month > 11 ? 0 : cell.month) && selectedDay?.year === cell.year;
 
             return (
               <div
                 key={index}
-                onClick={() => handleDayClick(cell.day, finalMonth, cell.year)}
+                onClick={() => handleDayClick(cell.day, cell.month, cell.year)}
                 className={`relative group aspect-square cursor-pointer rounded-xl sm:rounded-2xl border-2 transition-all duration-200 w-full max-w-[3rem] sm:max-w-[3.5rem] mx-auto
                   ${!cell.isCurrentMonth ? 'border-transparent bg-transparent hover:border-gray-200' : 'bg-white hover:border-[#FF5722]/50'}
                   ${isToday && !isSelected ? 'border-[#FF5722]/30 bg-orange-50/30' : 'border-gray-50'}
@@ -166,10 +174,10 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick, dotsMap =
 
                 {/* Puntitos de indicadores */}
                 <div className="absolute left-1.5 bottom-1.5 flex gap-1">
-                  {dotsMap[`${cell.year}-${finalMonth}-${cell.day}`]?.hasRoutine && (
+                  {dotsMap[`${cell.year}-${cell.month < 0 ? 11 : cell.month > 11 ? 0 : cell.month}-${cell.day}`]?.hasRoutine && (
                     <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-400 max-w-full shadow-sm" title="Tiene rutina asignada"></div>
                   )}
-                  {dotsMap[`${cell.year}-${finalMonth}-${cell.day}`]?.hasNote && (
+                  {dotsMap[`${cell.year}-${cell.month < 0 ? 11 : cell.month > 11 ? 0 : cell.month}-${cell.day}`]?.hasNote && (
                     <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#FF5722] shadow-sm" title="Tiene notas"></div>
                   )}
                 </div>
@@ -180,7 +188,7 @@ export const ContinuousCalendar: React.FC<CalendarProps> = ({ onClick, dotsMap =
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation(); // Evitar click en toda la celda principal
-                      handleDayClick(cell.day, finalMonth, cell.year, true);
+                      handleDayClick(cell.day, cell.month, cell.year, true);
                     }}
                     className="absolute right-1 bottom-1 z-10 opacity-0 transition-opacity group-hover:opacity-100 p-0 bg-transparent border-none outline-none"
                   >
