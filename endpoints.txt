@@ -1,0 +1,130 @@
+====================================================================
+               DOCUMENTACIÓN DE ENDPOINTS DE NOTEGYM
+====================================================================
+
+La siguiente lista contiene todos los endpoints creados en la API de
+NoteGYM hasta la fecha, con sus peticiones, respuestas y si requieren
+o no autenticación mediante Token JWT.
+
+--------------------------------------------------------------------
+1. AUTH CONTROLLER (`/auth`)
+   Estado: PÚBLICOS (No requieren JWT)
+--------------------------------------------------------------------
+- POST `/auth/register`
+  Descripción: Registra un nuevo usuario en el sistema.
+  Recibe: Body en JSON con los campos de `User` (username, mail, password, etc).
+  Devuelve: Mensaje de confirmación (200 OK) o error si el usuario/email ya existe (400 Bad Request).
+
+- POST `/auth/login`
+  Descripción: Inicia sesión en el sistema.
+  Recibe: Body en JSON de tipo LoginRequestTO (username, password).
+  Devuelve: El token JWT en caso de éxito (200 OK) o error si las credenciales fallan (401 Unauthorized).
+
+
+--------------------------------------------------------------------
+2. USER CONTROLLER (`/api/user`)
+   Estado: PROTEGIDOS (Requieren un Token JWT válido en el Header)
+--------------------------------------------------------------------
+- POST `/api/user/{username}/desblock`
+  Descripción: Desbloquea a un usuario que se ha bloqueado.
+  Recibe: Path variable de `{username}` al que desbloquear, y en el Body un JSON con los datos del administrador (username, password).
+  Devuelve: Mensaje de confirmación o error de permisos.
+
+- GET `/api/user/perfil`
+  Descripción: Obtiene los datos del perfil del usuario logueado.
+  Recibe: Headers (`username` y opcionalmente `password`).
+  Devuelve: El objeto del usuario completo en JSON.
+
+
+--------------------------------------------------------------------
+3. NOTAS CONTROLLER (`/api/notas`)
+   Estado: PROTEGIDOS (Requieren un Token JWT válido en el Header)
+--------------------------------------------------------------------
+- GET `/api/notas`
+  Descripción: Recupera todas las notas.
+  Devuelve: Lista (Array) JSON de objetos Note.
+
+- GET `/api/notas/{id}`
+  Descripción: Recupera la nota específica según su ID.
+  Devuelve: Un JSON con la nota, o error 404 si no se encuentra.
+
+- POST `/api/notas`
+  Descripción: Crea una nueva nota en la BD.
+  Recibe: Body JSON con objeto Note (name, text, etc).
+  Devuelve: El objeto Note creado con su ID asignado.
+
+- PUT `/api/notas/{id}`
+  Descripción: Actualiza la información de una nota.
+  Recibe: Path variable del `{id}` a actualizar, Body JSON con la nota.
+  Devuelve: Objeto Note con las actualizaciones guardadas.
+
+- DELETE `/api/notas/{id}`
+  Descripción: Elimina la nota de la base de datos.
+  Recibe: Path variable `{id}` de la nota.
+  Devuelve: String confirmando la eliminación o advirtiendo que no se encontró.
+
+
+--------------------------------------------------------------------
+4. EXERCISE CONTROLLER (`/api/exercises`)
+   Estado: PROTEGIDOS (Requieren un Token JWT válido en el Header)
+--------------------------------------------------------------------
+- GET `/api/exercises`
+  Descripción: Lista todos los ejercicios.
+  Devuelve: Un Array JSON de objetos Exercise.
+
+- GET `/api/exercises/{id}`
+  Descripción: Recupera los datos de un ejercicio.
+  Devuelve: El Exercise como JSON.
+
+- POST `/api/exercises`
+  Descripción: Añade un nuevo ejercicio a la BD.
+  Recibe: Body JSON del Exercise (name, description, videoUrl, imagePath, etc).
+  Devuelve: El Exercise guardado en BD.
+
+- PUT `/api/exercises/{id}`
+  Descripción: Actualiza los detalles de un ejercicio.
+  Recibe: El ID e información en el Body JSON.
+  Devuelve: El Exercise con los cambios.
+
+- DELETE `/api/exercises/{id}`
+  Descripción: Borra el ejercicio definitivamente.
+  Recibe: El id en el Path.
+  Devuelve: Mensaje de confirmación.
+
+
+--------------------------------------------------------------------
+5. WORKOUT CONTROLLER (`/api/workouts`)
+   Estado: PROTEGIDOS (Requieren un Token JWT válido en el Header)
+--------------------------------------------------------------------
+- GET `/api/workouts`
+  Descripción: Devuelve la lista completa de rutinas (Workouts).
+  Devuelve: Array JSON de objetos Workout (que a su vez contienen su lista de Exercises).
+
+- GET `/api/workouts/{id}`
+  Descripción: Obtiene una rutina concreta por ID.
+  Devuelve: Objeto Workout.
+
+- POST `/api/workouts`
+  Descripción: Guarda un nuevo Workout.
+  Recibe: Objeto JSON con name, description.
+  Devuelve: El Workout creado.
+
+- PUT `/api/workouts/{id}`
+  Descripción: Actualiza datos básicos de la rutina (nombre y descripción).
+  Recibe: El `{id}` y un JSON con los datos.
+  Devuelve: Objeto Workout actualizado.
+
+- DELETE `/api/workouts/{id}`
+  Descripción: Elimina la rutina de la BD.
+  Recibe: ID en el path.
+  Devuelve: Mensaje en string confirmando que se ha eliminado.
+
+- POST `/api/workouts/{workoutId}/exercises/{exerciseId}`
+  Descripción: ENLACE. Añade un ejercicio existente a una rutina.
+  Recibe: Los ID de la rutina y del ejercicio en el path de la URL.
+  Devuelve: Devuelve la rutina (Workout) actualizada con el ejercicio asignado.
+
+- DELETE `/api/workouts/{workoutId}/exercises/{exerciseId}`
+  Descripción: DESENLACE. Quita un ejercicio de la lista de esa rutina.
+  Recibe: Los IDs en el path.
+  Devuelve: La rutina actualizada sin ese ejercicio específico.

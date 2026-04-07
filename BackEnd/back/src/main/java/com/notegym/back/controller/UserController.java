@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,11 +59,10 @@ public class UserController {
     }
 
     @GetMapping("/perfil")
-    public ResponseEntity<User> getPerfil(@RequestHeader(value = "username", required = false) String username, 
-                                          @RequestHeader(value = "password", required = false) String password) {
-        if (username == null || username.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+    public ResponseEntity<User> getPerfil() {
+        // Obtenemos el nombre de usuario del contexto de seguridad (inyectado por el filtro JWT)
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isPresent()) {
             return ResponseEntity.ok(userOpt.get());

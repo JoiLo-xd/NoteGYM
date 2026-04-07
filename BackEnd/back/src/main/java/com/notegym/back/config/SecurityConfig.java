@@ -35,10 +35,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // Rutas públicas (Registro y Login) siempre permitidas
                         .requestMatchers("/auth/**").permitAll()
-                        // Rutas de pruebas / transición:
-                        // Permitimos momentaneamente estas para no romper tu Frontend antes de que lo arreglemos
-                        // Una vez modificados los headers en React, pasaremos esto a .authenticated()
-                        .requestMatchers("/api/user/perfil", "/api/user/{username}/desblock").permitAll()
                         // Todo lo demás REQUIERE estar autenticado (JWT válido)
                         .anyRequest().authenticated()
                 )
