@@ -35,6 +35,11 @@ o no autenticación mediante Token JWT.
   Recibe: Headers (`username` y opcionalmente `password`).
   Devuelve: El objeto del usuario completo en JSON.
 
+- POST `/api/user/update`
+  Descripción: Actualiza la información del perfil del usuario autenticado (nombre, email, sexo y/o contraseña). El nombre de usuario (username) no puede ser modificado.
+  Recibe: Body JSON con los campos de `User` a actualizar (name, mail, sex, password).
+  Devuelve: El objeto del usuario actualizado en JSON.
+
 
 --------------------------------------------------------------------
 3. NOTAS CONTROLLER (`/api/notas`)
