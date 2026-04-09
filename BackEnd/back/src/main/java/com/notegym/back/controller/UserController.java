@@ -69,4 +69,27 @@ public class UserController {
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
+
+    @PostMapping("/update")
+    public ResponseEntity<User> updatePerfil(@RequestBody User userUpdates) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            
+            if (userUpdates.getName() != null) user.setName(userUpdates.getName());
+            if (userUpdates.getMail() != null) user.setMail(userUpdates.getMail());
+            if (userUpdates.getSex() != null) user.setSex(userUpdates.getSex());
+            
+            if (userUpdates.getPassword() != null && !userUpdates.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(userUpdates.getPassword()));
+            }
+            
+            User updatedUser = userRepository.save(user);
+            return ResponseEntity.ok(updatedUser);
+        }
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
 }

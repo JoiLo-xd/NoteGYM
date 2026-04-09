@@ -28,6 +28,16 @@ export interface Workout {
   exercises: Exercise[];
 }
 
+export interface User {
+  id?: number;
+  username: string;
+  name: string;
+  mail: string;
+  sex: string;
+  role?: string;
+  password?: string;
+}
+
 export const apiService = {
   // Ejercicios
   getExercises: async (): Promise<Exercise[]> => {
@@ -86,5 +96,22 @@ export const apiService = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Error deleting workout");
+  },
+
+  // Perfil de Usuario
+  getProfile: async (): Promise<User> => {
+    const res = await fetch(`${API_BASE_URL}/user/perfil`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching profile");
+    return res.json();
+  },
+
+  updateProfile: async (userData: Partial<User>): Promise<User> => {
+    const res = await fetch(`${API_BASE_URL}/user/update`, {
+      method: "POST",
+      headers: getHeaders(true),
+      body: JSON.stringify(userData),
+    });
+    if (!res.ok) throw new Error("Error updating profile");
+    return res.json();
   }
 };

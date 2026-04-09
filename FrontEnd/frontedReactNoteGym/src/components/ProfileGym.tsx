@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderGym from "./headerGym";
 import Sidebar from "./Sidebar";
+import { apiService } from "../services/api";
 
 interface UserData {
   name: string;
@@ -17,8 +18,10 @@ const initialData: UserData = {
   sexo: localStorage.getItem("sexo") || "",
 };
 
+type UserRole = 'admin' | 'user' | 'trainer';
+
 export default function ProfileGym() {
-  const userRole = (localStorage.getItem('role') as any) || "user";
+  const userRole = (localStorage.getItem('role') as UserRole) || "user";
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<UserData>(initialData);
@@ -30,11 +33,33 @@ export default function ProfileGym() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  //  useEffect(() => {
-  //    // si cargas del backend: 
-  //    setFormData(initialData);
-  //    setOriginalData(initialData);
-  //  }, []);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const profile = await apiService.getProfile();
+        // Mapear de nombres de backend (mail, sex) a nombres de frontend (email, sexo)
+        const mappedData: UserData = {
+          name: profile.name || "",
+          username: profile.username || "",
+          email: profile.mail || "", // Backend: mail -> Frontend: email
+          sexo: profile.sex || "OTRO", // Backend: sex -> Frontend: sexo
+        };
+        setFormData(mappedData);
+        setOriginalData(mappedData);
+        
+        // Mantener localStorage sincronizado con lo que espera la app
+        localStorage.setItem("name", mappedData.name);
+        localStorage.setItem("username", mappedData.username);
+        localStorage.setItem("email", mappedData.email);
+        localStorage.setItem("sexo", mappedData.sexo);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        // Si hay error, al menos tenemos los datos del localStorage inicial
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -84,12 +109,15 @@ export default function ProfileGym() {
     }
 
     const dataToSave = {
-      ...formData,
+      name: formData.name,
+      mail: formData.email, // Mapeo para el backend
+      sex: formData.sexo, // Mapeo para el backend
       ...(newPassword && { password: newPassword }),
     };
 
     try {
       console.log("Datos enviados al servidor:", dataToSave);
+      await apiService.updateProfile(dataToSave);
 
       setMessage({ type: "success", text: "¡Perfil actualizado correctamente!" });
       setOriginalData(formData);
@@ -97,8 +125,14 @@ export default function ProfileGym() {
 
       setNewPassword("");
       setConfirmPassword("");
+      
+      // Actualizar localStorage con los nombres correctos
+      localStorage.setItem("name", formData.name);
+      localStorage.setItem("email", formData.email);
+      localStorage.setItem("sexo", formData.sexo);
     } catch (error) {
-      setMessage({ type: "error", text: "Error al conectar con el servidor." });
+      console.error("Error al actualizar el perfil:", error);
+      setMessage({ type: "error", text: "Error al actualizar el perfil en el servidor." });
     }
   };
 
@@ -159,6 +193,7 @@ export default function ProfileGym() {
                 value={formData.username}
                 onChange={handleChange}
                 isEditing={isEditing}
+                disabled={true} // El username no se puede modificar
               />
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center py-2 border-b border-gray-300">
@@ -249,9 +284,12 @@ interface ProfileInputProps {
   isEditing: boolean;
   type?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
-const ProfileInput: React.FC<ProfileInputProps> = ({ label, name, value, onChange, isEditing, type = "text", placeholder }) => {
+const ProfileInput: React.FC<ProfileInputProps> = ({ 
+  label, name, value, onChange, isEditing, type = "text", placeholder, disabled = false 
+}) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center py-2 border-b border-gray-300">
       <label htmlFor={name.toString()} className="text-lg font-medium text-gray-600 mb-1 md:mb-0">
@@ -266,7 +304,10 @@ const ProfileInput: React.FC<ProfileInputProps> = ({ label, name, value, onChang
           value={value}
           onChange={onChange}
           placeholder={placeholder || label}
-          className="w-full md:w-2/3 p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF5722] transition duration-150 text-lg text-gray-800"
+          disabled={disabled}
+          className={`w-full md:w-2/3 p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF5722] transition duration-150 text-lg text-gray-800 ${
+            disabled ? "bg-gray-100 cursor-not-allowed text-gray-500" : ""
+          }`}
           required={type !== "password"}
         />
       ) : (

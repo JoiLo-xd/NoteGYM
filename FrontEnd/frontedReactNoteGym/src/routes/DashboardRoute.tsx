@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HeaderGym from "../components/headerGym";
 import DashboardGym from "../components/dashboardGym";
 import Sidebar from "@/components/Sidebar";
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'admin' | 'user' | 'trainer';
 
@@ -14,17 +14,15 @@ export default function DashboardRoute() {
 
     useEffect(() => {
         const fetchUserData = async () => {
-            // 1. Obtener el token JWT de localStorage
-            //const token = localStorage.getItem('token'); 
-            setUserName(localStorage.getItem('username') || '');
-            setUserRole(localStorage.getItem('role') as UserRole || 'user');
-            const password = localStorage.getItem('password');
+            const storedUsername = localStorage.getItem('username');
+            const storedRole = localStorage.getItem('role') as UserRole || 'user';
             
-            // Si no hay token, redirigimos al login (esto se hace mejor en ProtectedRoute, pero es una buena verificación aquí)
-            if (!userName || !password) {
-                console.error("No se encontró usuario. Redirigiendo al login...");
-                // Aquí podrías usar useNavigate si este componente no es una ruta principal
-                // O dejar que el ProtectedRoute se encargue.
+            setUserName(storedUsername || '');
+            setUserRole(storedRole);
+            
+            if (!storedUsername || !localStorage.getItem('token')) {
+                console.error("No se encontró usuario o token. Redirigiendo al login...");
+                navigate('/loginUserGym'); 
                 return;
             }
 
