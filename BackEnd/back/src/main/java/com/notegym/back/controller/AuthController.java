@@ -20,6 +20,7 @@ import com.notegym.back.service.JWTService;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    
 
     @Autowired
     private UserRepository userRepository;
