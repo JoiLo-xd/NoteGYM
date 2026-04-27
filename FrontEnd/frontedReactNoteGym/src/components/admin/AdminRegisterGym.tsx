@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderGym from "../headerGym";
 import Sidebar from "../Sidebar";
+import { apiService } from "../../services/api";
 
 // 1. FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA
 const validatePassword = (password: string): boolean => {
@@ -9,15 +10,25 @@ const validatePassword = (password: string): boolean => {
     return passwordRegex.test(password);
 };
 
+interface FormData {
+    username: string;
+    password: string;
+    passwordRep: string;
+    name: string;
+    mail: string;
+    sex: string;
+    role: "ADMIN" | "USER" | "TRAINER";
+}
+
 export default function AdminRegisterGym () {
-    const [formData, setFormData] = React.useState({
+    const [formData, setFormData] = React.useState<FormData>({
         username: "",
         password: "",
         passwordRep: "",
         name: "",
         mail: "", 
         sex: "",
-        role: "USER" // Por defecto
+        role: "USER"
     });
 
     const navigate = useNavigate();
@@ -66,38 +77,33 @@ export default function AdminRegisterGym () {
         setServerMessage("");
 
         try {
-            // Desestructuramos para NO enviar 'passwordRep' al servidor
-            const { passwordRep, ...dataToSend } = formData; 
+            // Seleccionamos solo los campos que el backend espera, evitando enviar 'passwordRep'
+            const dataToSend = {
+                username: formData.username,
+                password: formData.password,
+                name: formData.name,
+                mail: formData.mail,
+                sex: formData.sex,
+                role: formData.role || "USER"
+            };
 
-            const res = await fetch("http://localhost:8080/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(dataToSend) // Enviamos solo los datos del registro
-            });
+            // Usando el servicio centralizado
+            await apiService.register(dataToSend);
 
-            const dataText = await res.text();
+            setStatus("success");
+            setServerMessage("¡Nuevo usuario registrado correctamente!");
+            
+            setTimeout(() => {
+                navigate('/dashboard'); 
+            }, 1500); 
 
-            if (res.ok) {
-                setStatus("success");
-                setServerMessage(dataText || "¡Usuario registrado correctamente!");
-                
-                setTimeout(() => {
-                    navigate('/dashboard'); 
-                }, 1500); 
-
-                // Limpiar el formulario
-                setFormData({ username: "", password: "", passwordRep: "", name: "", mail: "", sex: "", role: "USER" });
-            } else {
-                setStatus("error");
-                setServerMessage(dataText || "Error desconocido al registrar.");
-            }
+            // Limpiar el formulario
+            setFormData({ username: "", password: "", passwordRep: "", name: "", mail: "", sex: "", role: "USER" });
 
         } catch (error) {
-            console.error(error);
+            console.error("Error en el registro admin:", error);
             setStatus("error");
-            setServerMessage("Error de conexión con el servidor.");
+            setServerMessage((error as Error).message || "Error desconocido al registrar.");
         }
     };
 
@@ -107,7 +113,7 @@ export default function AdminRegisterGym () {
     return (
         <div className="min-h-screen gym-bg flex flex-col">
             <HeaderGym />
-            <Sidebar userRole={(localStorage.getItem('role') as any) || "user"} />
+            <Sidebar userRole={(localStorage.getItem('role') as 'admin' | 'user' | 'trainer') || "user"} />
             
             <main className="flex-grow pt-24 px-6 pb-10 flex flex-col justify-start items-center">
 

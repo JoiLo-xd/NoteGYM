@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderGym from '../headerGym';
 import Sidebar from '../Sidebar';
-
+import { apiService } from '../../services/api';
 
 // Definición de roles para el combobox
 type Role = 'admin' | 'trainer' | 'user';
 
 export default function ModUsers() {
-    const userRole = (localStorage.getItem('role') as any) || "user";
+    const userRole = (localStorage.getItem('role') as 'admin' | 'user' | 'trainer') || "user";
     const navigate = useNavigate();
     // Estado para el usuario que se va a modificar/eliminar
     const [usernameInput, setUsernameInput] = useState<string>('');
@@ -35,19 +35,16 @@ export default function ModUsers() {
         setMessage(`Modificando el rol de ${usernameInput} a ${newRole}...`);
 
         try {
-            // Aquí iría tu fetch a Spring Boot (e.g., PUT http://localhost:8080/api/admin/users/{id})
-            // Es crucial incluir el token de administrador en la cabecera 'Authorization'.
-            
-            // --- SIMULACIÓN DE API ---
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            // Usando el servicio centralizado
+            await apiService.updateUserAdmin(usernameInput, { role: newRole });
 
-            // Si la API es exitosa:
             setStatus('success');
             setMessage(`¡Rol de ${usernameInput} modificado a ${newRole} correctamente!`);
 
         } catch (e) {
+            console.error("Error al modificar rol:", e);
             setStatus('error');
-            setMessage("Error al modificar el rol en el servidor.");
+            setMessage((e as Error).message || "Error al modificar el rol en el servidor.");
         }
     };
 
@@ -66,35 +63,18 @@ export default function ModUsers() {
         setMessage(`Eliminando la cuenta de ${usernameInput}...`);
 
         try {
-            // Aquí iría tu fetch a Spring Boot (e.g., DELETE http://localhost:8080/api/admin/users/{username})
+            // Usando el servicio centralizado
+            await apiService.deleteUserAdmin(usernameInput);
 
-            // --- SIMULACIÓN DE API ---
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
-
-            // Si la API es exitosa:
             setStatus('success');
             setMessage(`¡Cuenta de ${usernameInput} eliminada con éxito!`);
             setUsernameInput('');
 
         } catch (e) {
+            console.error("Error al eliminar cuenta:", e);
             setStatus('error');
-            setMessage("Error al intentar eliminar la cuenta.");
+            setMessage((e as Error).message || "Error al intentar eliminar la cuenta.");
         }
-    };
-
-    // Componente interno para mostrar feedback
-    const FeedbackMessage = () => {
-        if (status === 'idle' || status === 'loading') return null;
-        
-        const baseClass = "p-3 rounded-lg text-sm text-center font-medium my-4 shadow-sm";
-        const successClass = "bg-green-100 border border-green-400 text-green-700";
-        const errorClass = "bg-red-100 border border-red-400 text-red-700 animate-pulse";
-        
-        return (
-            <div className={`${baseClass} ${status === 'success' ? successClass : errorClass}`}>
-                {message}
-            </div>
-        );
     };
 
     return (
@@ -110,7 +90,7 @@ export default function ModUsers() {
                         Gestión de Cuenta
                     </h2>
 
-            <FeedbackMessage />
+            <FeedbackMessage status={status} message={message} />
 
             <div className="space-y-6">
                 
@@ -194,3 +174,23 @@ export default function ModUsers() {
     </div>
     );
 }
+
+// Componente de feedback movido fuera para evitar errores de renderizado
+interface FeedbackProps {
+    status: 'idle' | 'loading' | 'success' | 'error';
+    message: string;
+}
+
+const FeedbackMessage = ({ status, message }: FeedbackProps) => {
+    if (status === 'idle' || status === 'loading') return null;
+    
+    const baseClass = "p-3 rounded-lg text-sm text-center font-medium my-4 shadow-sm";
+    const successClass = "bg-green-100 border border-green-400 text-green-700";
+    const errorClass = "bg-red-100 border border-red-400 text-red-700 animate-pulse";
+    
+    return (
+        <div className={`${baseClass} ${status === 'success' ? successClass : errorClass}`}>
+            {message}
+        </div>
+    );
+};

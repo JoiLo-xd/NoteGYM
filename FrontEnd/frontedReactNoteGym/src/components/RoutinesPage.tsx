@@ -5,7 +5,7 @@ import HeaderGym from "./headerGym";
 import Sidebar from "./Sidebar";
 import { apiService } from "../services/api";
 import type { Exercise as ApiExercise, Workout } from "../services/api";
-import { useSnack } from "./SnackProvider";
+import { useSnack } from "../context/SnackContext";
 
 interface Exercise {
   id: string;
@@ -37,8 +37,6 @@ const mapApiWorkout = (w: Workout): Routine => ({
   exercises: (w.exercises || []).map(mapApiExercise),
   isGlobal: false
 });
-
-const GLOBAL_EXERCISES: Exercise[] = [];
 
 const GLOBAL_ROUTINES: Routine[] = [];
 

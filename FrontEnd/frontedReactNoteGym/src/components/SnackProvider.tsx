@@ -1,23 +1,7 @@
-
-
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ErrorIcon, SuccessIcon } from '@/components/icons/SnackIcons';
 
-type Variant = 'success' | 'error';
-
-interface SnackContextType {
-  createSnack: (message: any, variant: Variant) => void;
-}
-
-const SnackContext = createContext<SnackContextType | undefined>(undefined);
-
-export const useSnack = (): SnackContextType => {
-  const context = useContext(SnackContext);
-  if (!context) {
-    throw new Error('useSnack must be used within a SnackProvider');
-  }
-  return context;
-};
+import { SnackContext, type Variant } from "../context/SnackContext";
 
 interface SnackProviderProps {
   children: React.ReactNode;
@@ -33,7 +17,7 @@ interface Snack {
 export const SnackProvider: React.FC<SnackProviderProps> = ({ children }) => {
   const [snacks, setSnacks] = useState<Snack[]>([]);
 
-  const createSnack = useCallback((message: any, variant: 'success' | 'error') => {
+  const createSnack = useCallback((message: string, variant: 'success' | 'error') => {
     const id = Date.now();
     const newSnack = { id, message, variant, visible: true };
     setSnacks([newSnack]);

@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 
-export default function LoginNoteGym() {
+import { apiService } from "../services/api";
 
-  const API_BASE_URL = "http://localhost:8080";
+export default function LoginNoteGym() {
 
   const [formData, setFormData] = React.useState({
     username: "",
@@ -21,7 +21,7 @@ export default function LoginNoteGym() {
   const [errors, setErrors] = React.useState<{
     username?: string;
     password?: string;
-    global?: string; // Usaremos 'global' para el mensaje del servidor
+    global?: string; 
   }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +29,6 @@ export default function LoginNoteGym() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // limpiar errores al escribir
     if (errors.global) {
         setErrors({});
         setServerMessage("");
@@ -39,65 +38,38 @@ export default function LoginNoteGym() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Resetear estados antes de enviar
     setErrors({});
     setStatus("loading");
     setServerMessage("");
 
     try {
-      const LOGIN_URL = API_BASE_URL + "/auth/login";
+      // Usando el nuevo servicio centralizado
+      const token = await apiService.login(formData);
 
-      const res = await fetch(LOGIN_URL, { 
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      setStatus("success");
+      setServerMessage("¡Inicio de sesión exitoso!");
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('username', formData.username);
 
-      const dataText = await res.text();
-
-      if (res.ok) {
-        // Código HTTP 200-299: Éxito
-        setStatus("success");
-        setServerMessage("¡Inicio de sesión exitoso!");
-        
-        // Aquí guardamos el token devuelto
-        localStorage.setItem('token', dataText);
-        localStorage.setItem('username', formData.username);
-
-        // Fetch user profile to get the actual role
-        try {
-            const perfilRes = await fetch(API_BASE_URL + "/api/user/perfil", {
-                headers: {
-                    "Authorization": `Bearer ${dataText}`
-                }
-            });
-            if (perfilRes.ok) {
-                const perfilData = await perfilRes.json();
-                localStorage.setItem('role', perfilData.role ? perfilData.role.toLowerCase() : 'user');
-            } else {
-                localStorage.setItem('role', 'user');
-            }
-        } catch(e) {
-            localStorage.setItem('role', 'user');
-        }
-
-        setTimeout(() => {
-            navigate('/dashboard'); // Redirige al dashboard
-        }, 1500);
-        
-      } else {
-        setStatus("error");
-        const errorMessage = dataText || "Usuario o contraseña incorrectos.";
-        setServerMessage(errorMessage);
-        setErrors({ global: errorMessage }); 
+      // Obtener el perfil para saber el rol
+      try {
+          const perfilData = await apiService.getProfile();
+          localStorage.setItem('role', perfilData.role ? perfilData.role.toLowerCase() : 'user');
+      } catch {
+          localStorage.setItem('role', 'user');
       }
+
+      setTimeout(() => {
+          navigate('/dashboard'); 
+      }, 1500);
+        
     } catch (error) {
-      console.error("Error en la conexión:", error);
+      console.error("Error en el login:", error);
       setStatus("error");
-      setServerMessage("Error de conexión con el servidor. Inténtalo de nuevo.");
-      setErrors({ global: "Error de conexión con el servidor." }); 
+      const errorMessage = (error as Error).message || "Usuario o contraseña incorrectos.";
+      setServerMessage(errorMessage);
+      setErrors({ global: errorMessage }); 
     }
   };
 

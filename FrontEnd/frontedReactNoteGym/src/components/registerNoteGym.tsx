@@ -1,5 +1,6 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiService } from "../services/api";
 
 // 1. FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA
 const validatePassword = (password: string): boolean => {
@@ -64,39 +65,32 @@ export default function RegisterNoteGym () {
         setServerMessage("");
 
         try {
-            // Desestructuramos para NO enviar 'passwordRep' al servidor
-            const { passwordRep, ...dataToSend } = formData; 
+            // Seleccionamos solo los campos necesarios, excluyendo 'passwordRep'
+            const dataToSend = {
+                username: formData.username,
+                password: formData.password,
+                name: formData.name,
+                mail: formData.mail,
+                sex: formData.sex
+            };
 
-            const res = await fetch("http://localhost:8080/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(dataToSend) // Enviamos solo los datos del registro
-            });
+            // Usando el servicio centralizado
+            await apiService.register(dataToSend);
 
-            const dataText = await res.text();
+            setStatus("success");
+            setServerMessage("¡Usuario registrado correctamente!");
+            
+            setTimeout(() => {
+                navigate('/loginUserGym'); 
+            }, 1500); 
 
-    // Estado para el mensaje de error de validación de la contraseña
-            if (res.ok) {
-                setStatus("success");
-                setServerMessage(dataText || "¡Usuario registrado correctamente!");
-                
-                setTimeout(() => {
-                    navigate('/loginUserGym'); 
-                }, 1500); 
-
-                // Limpiar el formulario
-                setFormData({ username: "", password: "", passwordRep: "", name: "", mail: "", sex: "" });
-            } else {
-                setStatus("error");
-                setServerMessage(dataText || "Error desconocido al registrar.");
-            }
+            // Limpiar el formulario
+            setFormData({ username: "", password: "", passwordRep: "", name: "", mail: "", sex: "" });
 
         } catch (error) {
-            console.error(error);
+            console.error("Error en el registro:", error);
             setStatus("error");
-            setServerMessage("Error de conexión con el servidor.");
+            setServerMessage((error as Error).message || "Error desconocido al registrar.");
         }
     };
 

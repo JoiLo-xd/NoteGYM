@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HeaderGym from "../components/headerGym";
 import DashboardGym from "../components/dashboardGym";
 import Sidebar from "@/components/Sidebar";
-import { useNavigate } from 'react-router-dom';
+import { apiService } from "../services/api";
 
 type UserRole = 'admin' | 'user' | 'trainer';
 
@@ -27,33 +28,19 @@ export default function DashboardRoute() {
             }
 
             try {
-                // 2. Realizar la solicitud al endpoint de user/perfil
-                const USER_URL = 'http://localhost:8080/api/user/perfil'; 
-                //alert(localStorage.getItem('username') + " " + localStorage.getItem('password') + " " + localStorage.getItem('name'));
-                const res = await fetch(USER_URL, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    },
-                });
+                // Usando el servicio centralizado
+                const data = await apiService.getProfile();
+                
+                const userRoleFromServer = data.role?.toLowerCase() as UserRole;
+                const userNameFromServer = data.name || data.username || '';
 
-                if (res.ok) {
-                    const data = await res.json();
+                setUserRole(userRoleFromServer || 'user');
+                setUserName(userNameFromServer);
                     
-                    const userRoleFromServer = data.role.toLowerCase() as UserRole;
-                    const userNameFromServer = data.name || data.username || '';
-
-                    setUserRole(userRoleFromServer);
-                    setUserName(userNameFromServer);
-                    
-                } else {
-                    console.error(`Error al obtener datos del perfil: ${res.status}`);
-
-                }
             } catch (error) {
-                console.error("Error de conexión al obtener datos del usuario:", error);
-                //navigate('/loginUserGym');
+                console.error("Error al obtener datos del perfil:", error);
+                // Si el token ha expirado, podríamos redirigir al login
+                // navigate('/loginUserGym');
             }
         };
         
