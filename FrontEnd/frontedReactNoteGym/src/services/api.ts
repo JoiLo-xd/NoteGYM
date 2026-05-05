@@ -4,12 +4,8 @@ export const AUTH_URL = `${BASE_URL}/auth`;
 
 const getHeaders = (isJson = false): HeadersInit => {
   const token = localStorage.getItem('token');
-  const headers: Record<string, string> = {
-    'Authorization': `Bearer ${token}`
-  };
-  if (isJson) {
-    headers['Content-Type'] = 'application/json';
-  }
+  const headers: Record<string, string> = { 'Authorization': `Bearer ${token}` };
+  if (isJson) headers['Content-Type'] = 'application/json';
   return headers;
 };
 
@@ -40,107 +36,127 @@ export interface User {
   password?: string;
 }
 
-export interface LoginCredentials {
-  username: string;
-  password?: string;
-}
-
-export interface RegisterData {
-  username: string;
-  password?: string;
-  name?: string;
-  mail?: string;
-  sex?: string;
-}
+export interface LoginCredentials { username: string; password?: string; }
+export interface RegisterData { username: string; password?: string; name?: string; mail?: string; sex?: string; }
 
 export const apiService = {
   // --- AUTH ---
   login: async (credentials: LoginCredentials): Promise<string> => {
     const res = await fetch(`${AUTH_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(errorText || "Error en el login");
-    }
-    return res.text(); // El login devuelve el token como texto plano
+    if (!res.ok) throw new Error(await res.text() || "Error en el login");
+    return res.text();
   },
 
   register: async (userData: RegisterData): Promise<string> => {
     const res = await fetch(`${AUTH_URL}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(errorText || "Error en el registro");
-    }
-    return res.json();
+    if (!res.ok) throw new Error(await res.text() || "Error en el registro");
+    return res.text();
   },
 
   // --- EJERCICIOS ---
-  getExercises: async (): Promise<Exercise[]> => {
-    const res = await fetch(`${API_BASE_URL}/exercises`, { headers: getHeaders() });
-    if (!res.ok) throw new Error("Error fetching exercises");
+  // Globales: creados por ADMIN (visibles para todos)
+  getGlobalExercises: async (): Promise<Exercise[]> => {
+    const res = await fetch(`${API_BASE_URL}/exercises/global`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching global exercises");
     return res.json();
   },
 
+  // Personales: creados por el usuario actual
+  getPersonalExercises: async (): Promise<Exercise[]> => {
+    const res = await fetch(`${API_BASE_URL}/exercises/personal`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching personal exercises");
+    return res.json();
+  },
+
+  // Crear ejercicio propio (si eres admin → global; si no → personal)
   createExercise: async (exercise: Partial<Exercise>): Promise<Exercise> => {
     const res = await fetch(`${API_BASE_URL}/exercises`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(exercise),
+      method: "POST", headers: getHeaders(true), body: JSON.stringify(exercise),
     });
     if (!res.ok) throw new Error("Error creating exercise");
     return res.json();
   },
 
-  deleteExercise: async (id: number | string): Promise<void> => {
-    const res = await fetch(`${API_BASE_URL}/exercises/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(),
+  // Trainer/Admin crea ejercicio para un usuario específico → queda como personal del usuario destino
+  createExerciseForUser: async (targetUsername: string, exercise: Partial<Exercise>): Promise<Exercise> => {
+    const res = await fetch(`${API_BASE_URL}/exercises/for/${targetUsername}`, {
+      method: "POST",
+      headers: getHeaders(true), // envía JWT: el trainer está autenticado
+      body: JSON.stringify(exercise),
     });
+    const body = await res.text();
+    if (!res.ok) {
+      try {
+        const parsed = JSON.parse(body);
+        throw new Error(parsed.error || parsed.message || body);
+      } catch {
+        throw new Error(`HTTP ${res.status}: ${body}`);
+      }
+    }
+    return JSON.parse(body);
+  },
+
+  deleteExercise: async (id: number | string): Promise<void> => {
+    const res = await fetch(`${API_BASE_URL}/exercises/${id}`, { method: "DELETE", headers: getHeaders() });
     if (!res.ok) throw new Error("Error deleting exercise");
   },
 
   // --- WORKOUTS ---
-  getWorkouts: async (): Promise<Workout[]> => {
-    const res = await fetch(`${API_BASE_URL}/workouts`, { headers: getHeaders() });
-    if (!res.ok) throw new Error("Error fetching workouts");
+  // Globales: creados por ADMIN
+  getGlobalWorkouts: async (): Promise<Workout[]> => {
+    const res = await fetch(`${API_BASE_URL}/workouts/global`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching global workouts");
     return res.json();
   },
 
+  // Personales: creados por el usuario actual
+  getPersonalWorkouts: async (): Promise<Workout[]> => {
+    const res = await fetch(`${API_BASE_URL}/workouts/personal`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching personal workouts");
+    return res.json();
+  },
+
+  // Crear workout propio
   createWorkout: async (workout: Partial<Workout>): Promise<Workout> => {
     const res = await fetch(`${API_BASE_URL}/workouts`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(workout),
+      method: "POST", headers: getHeaders(true), body: JSON.stringify(workout),
     });
     if (!res.ok) throw new Error("Error creating workout");
     return res.json();
   },
 
+  // Trainer crea workout para un usuario específico → queda como personal del usuario target
+  createWorkoutForUser: async (targetUsername: string, workout: Partial<Workout>): Promise<Workout> => {
+    const res = await fetch(`${API_BASE_URL}/workouts?targetUser=${targetUsername}`, {
+      method: "POST", headers: getHeaders(true), body: JSON.stringify(workout),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`HTTP ${res.status}${body ? ': ' + body : ''}`);
+    }
+    return res.json();
+  },
+
   addExerciseToWorkout: async (workoutId: number, exerciseId: number | string): Promise<Workout> => {
     const res = await fetch(`${API_BASE_URL}/workouts/${workoutId}/exercises/${exerciseId}`, {
-      method: "POST",
-      headers: getHeaders(),
+      method: "POST", headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Error adding exercise to workout");
     return res.json();
   },
 
   deleteWorkout: async (id: number): Promise<void> => {
-    const res = await fetch(`${API_BASE_URL}/workouts/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(),
-    });
+    const res = await fetch(`${API_BASE_URL}/workouts/${id}`, { method: "DELETE", headers: getHeaders() });
     if (!res.ok) throw new Error("Error deleting workout");
   },
 
-  // --- PERFIL Y USUARIOS ---
+  // --- PERFIL ---
   getProfile: async (): Promise<User> => {
     const res = await fetch(`${API_BASE_URL}/user/perfil`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error fetching profile");
@@ -149,9 +165,7 @@ export const apiService = {
 
   updateProfile: async (userData: Partial<User>): Promise<User> => {
     const res = await fetch(`${API_BASE_URL}/user/update`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(userData),
+      method: "POST", headers: getHeaders(true), body: JSON.stringify(userData),
     });
     if (!res.ok) throw new Error("Error updating profile");
     return res.json();
@@ -160,9 +174,7 @@ export const apiService = {
   // --- ADMIN ---
   unlockUser: async (targetUsername: string, adminCredentials: LoginCredentials): Promise<string> => {
     const res = await fetch(`${API_BASE_URL}/user/${targetUsername}/desblock`, {
-      method: 'POST',
-      headers: getHeaders(true),
-      body: JSON.stringify(adminCredentials)
+      method: 'POST', headers: getHeaders(true), body: JSON.stringify(adminCredentials)
     });
     const text = await res.text();
     if (!res.ok) throw new Error(text || "Error al desbloquear usuario");
@@ -171,19 +183,23 @@ export const apiService = {
 
   updateUserAdmin: async (username: string, userData: Partial<User>): Promise<User> => {
     const res = await fetch(`${API_BASE_URL}/admin/users/${username}`, {
-      method: 'PUT',
-      headers: getHeaders(true),
-      body: JSON.stringify(userData)
+      method: 'PUT', headers: getHeaders(true), body: JSON.stringify(userData)
     });
-    if (!res.ok) throw new Error("Error al actualizar usuario");
+    if (!res.ok) throw new Error(await res.text() || "Error al actualizar usuario");
     return res.json();
   },
 
   deleteUserAdmin: async (username: string): Promise<void> => {
     const res = await fetch(`${API_BASE_URL}/admin/users/${username}`, {
-      method: 'DELETE',
-      headers: getHeaders()
+      method: 'DELETE', headers: getHeaders()
     });
-    if (!res.ok) throw new Error("Error al eliminar usuario");
-  }
+    if (!res.ok) throw new Error(await res.text() || "Error al eliminar usuario");
+  },
+
+  // Lista todos los usuarios (admin y trainer pueden usarlo)
+  getAllUsers: async (): Promise<User[]> => {
+    const res = await fetch(`${API_BASE_URL}/admin/users`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching users");
+    return res.json();
+  },
 };

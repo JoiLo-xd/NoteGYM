@@ -7,6 +7,9 @@ import { apiService } from "../services/api";
 import type { Exercise as ApiExercise, Workout } from "../services/api";
 import { useSnack } from "../context/SnackContext";
 
+const userRole = () => (localStorage.getItem('role') || 'user').toLowerCase();
+const isTrainerOrAdmin = () => ['trainer', 'admin'].includes(userRole());
+
 interface Exercise {
   id: string;
   name: string;
@@ -38,11 +41,10 @@ const mapApiWorkout = (w: Workout): Routine => ({
   isGlobal: false
 });
 
-const GLOBAL_ROUTINES: Routine[] = [];
-
 export default function RoutinesPage() {
   const navigate = useNavigate();
   const { createSnack } = useSnack();
+  const canCreate = isTrainerOrAdmin();
 
   // Estados persistentes
   const [assignedRoutines, setAssignedRoutines] = useState<Record<string, Routine[]>>(() => {
@@ -50,19 +52,25 @@ export default function RoutinesPage() {
     return saved ? JSON.parse(saved) : {};
   });
 
-  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
-  const [customRoutines, setCustomRoutines] = useState<Routine[]>([]);
+  const [globalExercises, setGlobalExercises] = useState<Exercise[]>([]);
+  const [personalExercises, setPersonalExercises] = useState<Exercise[]>([]);
+  const [globalRoutines, setGlobalRoutines] = useState<Routine[]>([]);
+  const [personalRoutines, setPersonalRoutines] = useState<Routine[]>([]);
 
   // Cargar datos
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [apiExercises, apiWorkouts] = await Promise.all([
-          apiService.getExercises(),
-          apiService.getWorkouts()
+        const [gEx, pEx, gWo, pWo] = await Promise.all([
+          apiService.getGlobalExercises(),
+          apiService.getPersonalExercises(),
+          apiService.getGlobalWorkouts(),
+          apiService.getPersonalWorkouts(),
         ]);
-        setCustomExercises(apiExercises.map(mapApiExercise));
-        setCustomRoutines(apiWorkouts.map(mapApiWorkout));
+        setGlobalExercises(gEx.map(mapApiExercise));
+        setPersonalExercises(pEx.map(mapApiExercise));
+        setGlobalRoutines(gWo.map(mapApiWorkout));
+        setPersonalRoutines(pWo.map(mapApiWorkout));
       } catch (err) {
         console.error("Error cargando datos del backend:", err);
       }
@@ -72,6 +80,7 @@ export default function RoutinesPage() {
 
   // Estados UI
   const [activeTab, setActiveTab] = useState<"globales" | "personales" | "ejercicios">("globales");
+  const [exerciseSubTab, setExerciseSubTab] = useState<"globales" | "personales">("globales");
   const [showCalendarDropdown, setShowCalendarDropdown] = useState(false);
   const [assignDate, setAssignDate] = useState("");
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
@@ -83,7 +92,7 @@ export default function RoutinesPage() {
 
   // Form states
   const [exForm, setExForm] = useState({ name: "", muscle: "", equipment: "" });
-  const [routForm, setRoutForm] = useState({ name: "", description: "", selectedExercises: [] as Exercise[] });
+  const [routForm, setRoutForm] = useState({ name: "", description: "", selectedExercises: [] as Exercise[], targetUser: "" });
 
   const handleAssignClick = (routine: Routine) => {
     setSelectedRoutine(routine);
@@ -117,17 +126,10 @@ export default function RoutinesPage() {
   const handleSaveExercise = async () => {
     if(!exForm.name) return;
     try {
-      const savedEx = await apiService.createExercise({
-        name: exForm.name,
-        type: exForm.muscle,
-        description: exForm.equipment,
-        videoUrl: "",
-        imagePath: "",
-        durationTime: 0
-      });
+      const payload = { name: exForm.name, type: exForm.muscle, description: exForm.equipment, videoUrl: "", imagePath: "", durationTime: 0 };
+      const savedEx = await apiService.createExercise(payload);
       const newEx = mapApiExercise(savedEx);
-      const updatedEx = [...customExercises, newEx];
-      setCustomExercises(updatedEx);
+      setPersonalExercises(prev => [...prev, newEx]);
       setIsExerciseModalOpen(false);
       setExForm({ name: "", muscle: "", equipment: "" });
       createSnack("Ejercicio creado con éxito", "success");
@@ -143,18 +145,22 @@ export default function RoutinesPage() {
       return;
     }
     try {
-      const savedWorkout = await apiService.createWorkout({ // Primero creamos el workout
-        name: routForm.name,
-        description: routForm.description,
-        exercises: []
-      });
+      let savedWorkout;
+      if (routForm.targetUser.trim()) {
+        // Trainer crea para usuario específico
+        savedWorkout = await apiService.createWorkoutForUser(routForm.targetUser.trim(), {
+          name: routForm.name, description: routForm.description, exercises: []
+        });
+      } else {
+        savedWorkout = await apiService.createWorkout({
+          name: routForm.name, description: routForm.description, exercises: []
+        });
+      }
 
-      // Luego añadimos los ejercicios uno a uno
       for (const ex of routForm.selectedExercises) {
         await apiService.addExerciseToWorkout(savedWorkout.id!, ex.id);
       }
 
-      // Volvemos a obtener ambos o reconstruimos localmente
       const newRoutine: Routine = {
         id: String(savedWorkout.id),
         name: routForm.name,
@@ -162,12 +168,14 @@ export default function RoutinesPage() {
         exercises: routForm.selectedExercises,
         isGlobal: false
       };
-      
-      const updated = [...customRoutines, newRoutine];
-      setCustomRoutines(updated);
+
+      // Si es para otro usuario no lo añadimos a la lista local
+      if (!routForm.targetUser.trim()) {
+        setPersonalRoutines(prev => [...prev, newRoutine]);
+      }
       setIsRoutineModalOpen(false);
-      setRoutForm({ name: "", description: "", selectedExercises: [] });
-      createSnack("Rutina creada correctamente", "success");
+      setRoutForm({ name: "", description: "", selectedExercises: [], targetUser: "" });
+      createSnack(routForm.targetUser.trim() ? `Rutina creada para ${routForm.targetUser}` : "Rutina creada correctamente", "success");
     } catch (err) {
       console.error(err);
       createSnack("Error creando la rutina", "error");
@@ -176,14 +184,10 @@ export default function RoutinesPage() {
 
   const handleDeleteExercise = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (id.startsWith("e")) {
-      createSnack("No puedes borrar un ejercicio global del sistema.", "error");
-      return;
-    }
     if(!window.confirm("¿Seguro que deseas eliminar este ejercicio?")) return;
     try {
       await apiService.deleteExercise(id);
-      setCustomExercises(prev => prev.filter(ex => ex.id !== id));
+      setPersonalExercises(prev => prev.filter(ex => ex.id !== id));
       createSnack("Ejercicio eliminado", "success");
     } catch(err) {
       console.error(err);
@@ -196,7 +200,7 @@ export default function RoutinesPage() {
     if(!window.confirm("¿Seguro que deseas eliminar este entrenamiento?")) return;
     try {
       await apiService.deleteWorkout(Number(id));
-      setCustomRoutines(prev => prev.filter(r => r.id !== id));
+      setPersonalRoutines(prev => prev.filter(r => r.id !== id));
       createSnack("Rutina eliminada", "success");
     } catch(err) {
       console.error(err);
@@ -214,7 +218,7 @@ export default function RoutinesPage() {
     });
   };
 
-  const allExercises = [...customExercises];
+  const allExercisesForPicker = [...globalExercises, ...personalExercises];
 
   return (
     <div className="min-h-screen gym-bg flex flex-col">
@@ -254,34 +258,47 @@ export default function RoutinesPage() {
           {/* CONTENT: EJERCICIOS */}
           {activeTab === "ejercicios" && (
             <div className="animate-in fade-in duration-300">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Librería de Ejercicios</h2>
-                <button 
-                  onClick={() => setIsExerciseModalOpen(true)}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition"
-                >
-                  + Crear Nuevo Ejercicio
-                </button>
+                {canCreate && (
+                  <button 
+                    onClick={() => setIsExerciseModalOpen(true)}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition"
+                  >
+                    + Crear Ejercicio Personal
+                  </button>
+                )}
+              </div>
+              {/* Subtabs globales/personales */}
+              <div className="flex gap-3 mb-6">
+                <button onClick={() => setExerciseSubTab("globales")} className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${exerciseSubTab === "globales" ? "bg-[#FF5722] text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}>🌐 Globales</button>
+                <button onClick={() => setExerciseSubTab("personales")} className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${exerciseSubTab === "personales" ? "bg-[#FF5722] text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}>🔒 Personales</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {allExercises.map(ex => (
-                  <div key={ex.id} className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative transition hover:shadow-md hover:border-[#FF5722]/50">
-                    <span className="text-[#FF5722] font-bold text-lg mb-1 pr-6">{ex.name}</span>
-                    <span className="text-gray-500 text-sm mb-2">Musculo: {ex.muscle || "General"}</span>
-                    <span className="text-gray-400 text-xs bg-gray-50 p-2 rounded-lg mt-auto text-center border border-gray-100 truncate" title={ex.equipment}>
-                      Equipo: {ex.equipment || "No especificado"}
-                    </span>
-                    {!ex.id.startsWith("e") && (
-                      <button 
-                        onClick={(e) => handleDeleteExercise(ex.id, e)}
-                        className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition duration-200 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg"
-                        title="Eliminar ejercicio"
-                      >
-                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {(exerciseSubTab === "globales" ? globalExercises : personalExercises).length === 0 ? (
+                  <p className="text-gray-500 italic col-span-full">
+                    {exerciseSubTab === "globales" ? "No hay ejercicios globales todavía (créalos como admin)." : "No tienes ejercicios personales todavía."}
+                  </p>
+                ) : (
+                  (exerciseSubTab === "globales" ? globalExercises : personalExercises).map(ex => (
+                    <div key={ex.id} className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative transition hover:shadow-md hover:border-[#FF5722]/50">
+                      <span className="text-[#FF5722] font-bold text-lg mb-1 pr-6">{ex.name}</span>
+                      <span className="text-gray-500 text-sm mb-2">Musculo: {ex.muscle || "General"}</span>
+                      <span className="text-gray-400 text-xs bg-gray-50 p-2 rounded-lg mt-auto text-center border border-gray-100 truncate" title={ex.equipment}>
+                        Equipo: {ex.equipment || "No especificado"}
+                      </span>
+                      {exerciseSubTab === "personales" && (
+                        <button 
+                          onClick={(e) => handleDeleteExercise(ex.id, e)}
+                          className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition duration-200 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg"
+                          title="Eliminar ejercicio"
+                        >
+                          <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -291,9 +308,9 @@ export default function RoutinesPage() {
             <div className="animate-in fade-in duration-300">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  {activeTab === "globales" ? "Rutinas por Defecto" : "Tus Rutinas"}
+                  {activeTab === "globales" ? "Rutinas Globales" : "Tus Rutinas Personales"}
                 </h2>
-                {activeTab === "personales" && (
+                {activeTab === "personales" && canCreate && (
                   <button 
                     onClick={() => setIsRoutineModalOpen(true)}
                     className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition shadow-md"
@@ -304,10 +321,12 @@ export default function RoutinesPage() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(activeTab === "globales" ? GLOBAL_ROUTINES : customRoutines).length === 0 ? (
-                  <p className="text-gray-500 italic col-span-full">No tienes entrenamientos {activeTab} todavía.</p>
+                {(activeTab === "globales" ? globalRoutines : personalRoutines).length === 0 ? (
+                  <p className="text-gray-500 italic col-span-full">
+                    {activeTab === "globales" ? "No hay entrenamientos globales (créalos como admin)." : "No tienes entrenamientos personales todavía."}
+                  </p>
                 ) : (
-                  (activeTab === "globales" ? GLOBAL_ROUTINES : customRoutines).map(routine => (
+                  (activeTab === "globales" ? globalRoutines : personalRoutines).map(routine => (
                     <div key={routine.id} className="group bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-[#FF5722]/30 transition flex flex-col h-full relative">
                       {activeTab === "personales" && (
                         <button 
@@ -324,19 +343,15 @@ export default function RoutinesPage() {
                         </div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2 pr-8">{routine.name}</h3>
                         <p className="text-gray-600 text-sm mb-4 leading-relaxed">{routine.description}</p>
-                        
                         <div className="mb-6">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Ejercicios de la Rutina</p>
                           <div className="flex flex-wrap gap-2">
                             {routine.exercises.map(ex => (
-                              <span key={ex.id} className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg border border-gray-200">
-                                {ex.name}
-                              </span>
+                              <span key={ex.id} className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg border border-gray-200">{ex.name}</span>
                             ))}
                           </div>
                         </div>
                       </div>
-
                       <button 
                         onClick={() => handleAssignClick(routine)}
                         className="w-full mt-auto px-4 py-3 rounded-xl bg-gray-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition shadow-md hover:-translate-y-0.5"
@@ -394,8 +409,8 @@ export default function RoutinesPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Selecciona los ejercicios incluidos</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200">
-                      {allExercises.map(ex => {
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200">
+                      {allExercisesForPicker.map(ex => {
                         const isSelected = routForm.selectedExercises.some(e => e.id === ex.id);
                         return (
                           <div 
@@ -410,9 +425,17 @@ export default function RoutinesPage() {
                       })}
                     </div>
                   </div>
+                  {/* Campo usuario destino (solo trainer/admin) */}
+                  {canCreate && (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Asignar a usuario (opcional)</label>
+                      <input type="text" value={routForm.targetUser} onChange={e => setRoutForm({...routForm, targetUser: e.target.value})} placeholder="Username del usuario (dejar vacío para ti mismo)" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] font-medium text-gray-800"/>
+                      <p className="text-xs text-gray-400 mt-1">Si introduces un username, la rutina aparecerá en los personales de ese usuario.</p>
+                    </div>
+                  )}
                   <div className="flex gap-3 pt-4">
                     <button onClick={handleSaveRoutine} className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-gray-800 transition">Crear Entrenamiento</button>
-                    <button onClick={() => { setIsRoutineModalOpen(false); setRoutForm({ name: "", description: "", selectedExercises: [] }); }} className="py-3 px-6 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Cancelar</button>
+                    <button onClick={() => { setIsRoutineModalOpen(false); setRoutForm({ name: "", description: "", selectedExercises: [], targetUser: "" }); }} className="py-3 px-6 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Cancelar</button>
                   </div>
                 </div>
              </div>

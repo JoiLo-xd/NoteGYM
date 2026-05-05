@@ -42,7 +42,7 @@ public class JWTService {
         return Jwts.builder()
         .id(user.getUsername())
         .claims(Map.of("username", user.getUsername()))
-        .subject(user.getMail())
+        .subject(user.getUsername())
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + expiration))
         .signWith(getSinginKey())

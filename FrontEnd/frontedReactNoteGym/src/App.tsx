@@ -11,6 +11,7 @@ import RoutinesPage from './components/RoutinesPage';
 import AdminRegisterGym from './components/admin/AdminRegisterGym';
 import TrainPage from './components/TrainPage';
 import ForumPage from './components/ForumPage';
+import TrainerPage from './components/trainer/TrainerPage';
 import { SnackProvider } from './components/SnackProvider';
 
 
@@ -42,6 +43,11 @@ function App() {
                     <Route path="/admin/AddUser" element={
                         <ProtectedRoute requiredRole="admin">
                             <AdminRegisterGym />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/trainer" element={
+                        <ProtectedRoute requiredRole="trainer">
+                            <TrainerPage />
                         </ProtectedRoute>
                     } />
                 </Routes>

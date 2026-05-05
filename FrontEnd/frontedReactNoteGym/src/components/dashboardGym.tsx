@@ -34,6 +34,14 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     return saved ? JSON.parse(saved) : {};
   });
   
+  const [calendarNotes, setCalendarNotes] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem('user_calendar_notes');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteText, setNoteText] = useState("");
+
   const navigate = useNavigate();
 
   // Opcional: recargar en background si hay cambios en localStorage para mantener en sync
@@ -41,12 +49,21 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     const interval = setInterval(() => {
         const sr = localStorage.getItem('user_assigned_routines');
         if(sr) setAssignedRoutines(JSON.parse(sr));
+        const sn = localStorage.getItem('user_calendar_notes');
+        if(sn) setCalendarNotes(JSON.parse(sn));
     }, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleDateClick = (day: number, month: number, year: number) => {
+  const handleDateClick = (day: number, month: number, year: number, createNote?: boolean) => {
     setSelectedDate({ day, month, year });
+    const clickedDateKey = `${year}-${month}-${day}`;
+    setNoteText(calendarNotes[clickedDateKey] || "");
+    if (createNote) {
+      setIsEditingNote(true);
+    } else {
+      setIsEditingNote(false);
+    }
   };
 
   // Obtener rutinas del día seleccionado
@@ -67,6 +84,19 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
     setAssignedRoutines(updatedRoutines);
     localStorage.setItem('user_assigned_routines', JSON.stringify(updatedRoutines));
     createSnack("Entrenamiento retirado del día seleccionado", "success");
+  };
+
+  const handleSaveNote = () => {
+    const updated = { ...calendarNotes };
+    if (noteText.trim()) {
+      updated[dateKey] = noteText;
+    } else {
+      delete updated[dateKey];
+    }
+    setCalendarNotes(updated);
+    localStorage.setItem('user_calendar_notes', JSON.stringify(updated));
+    setIsEditingNote(false);
+    createSnack(noteText.trim() ? "Nota guardada" : "Nota eliminada", "success");
   };
 
   return (
@@ -98,16 +128,18 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
           {/* Calendario */}
           <div className="lg:col-span-2 flex flex-col items-center">
             <ContinuousCalendar 
-              onClick={(day, month, year) => handleDateClick(day, month, year)} 
+              onClick={(day, month, year, createNote) => handleDateClick(day, month, year, createNote)} 
               dotsMap={useMemo(() => {
                 const map: Record<string, { hasRoutine: boolean; hasNote: boolean }> = {};
-                Object.keys(assignedRoutines).forEach(k => {
-                  if (assignedRoutines[k].length > 0) {
-                    map[k] = { hasRoutine: true, hasNote: false };
-                  }
+                const keys = new Set([...Object.keys(assignedRoutines), ...Object.keys(calendarNotes)]);
+                keys.forEach(k => {
+                  map[k] = { 
+                    hasRoutine: assignedRoutines[k] && assignedRoutines[k].length > 0,
+                    hasNote: !!calendarNotes[k]
+                  };
                 });
                 return map;
-              }, [assignedRoutines])}
+              }, [assignedRoutines, calendarNotes])}
             />
           </div>
 
@@ -169,6 +201,47 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
                           No tienes entrenamientos asignados. Tómate un descanso o añade carga desde "Gestionar Entrenamientos".
                         </p>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Sección de Notas */}
+                  <div className="mt-6 border-t border-gray-100 pt-4">
+                    <div className="flex justify-between items-center mb-3 ml-1">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Notas del Día</p>
+                      {!isEditingNote && !calendarNotes[dateKey] && (
+                        <button onClick={() => setIsEditingNote(true)} className="text-[#FF5722] hover:text-[#F4511E] text-xs font-bold transition-colors">
+                          + Añadir
+                        </button>
+                      )}
+                    </div>
+
+                    {isEditingNote ? (
+                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 shadow-inner">
+                        <textarea 
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          placeholder="Escribe tu nota o diario de entrenamiento aquí..."
+                          className="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-[#FF5722] resize-none font-medium text-gray-700"
+                          rows={3}
+                        />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button onClick={() => setIsEditingNote(false)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
+                          <button onClick={handleSaveNote} className="px-4 py-2 text-xs bg-[#FF5722] text-white font-bold rounded-lg hover:bg-[#F4511E] transition-colors shadow-sm">Guardar</button>
+                        </div>
+                      </div>
+                    ) : calendarNotes[dateKey] ? (
+                      <div className="group relative bg-orange-50/50 p-4 rounded-xl border border-orange-100 shadow-sm transition-all hover:shadow-md hover:border-[#FF5722]/30">
+                        <p className="text-gray-800 text-sm whitespace-pre-wrap font-medium">{calendarNotes[dateKey]}</p>
+                        <button 
+                          onClick={() => setIsEditingNote(true)}
+                          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-[#FF5722] hover:bg-orange-100 p-2 rounded-lg transition-all"
+                          title="Editar nota"
+                        >
+                          <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">No hay notas registradas para este día.</p>
                     )}
                   </div>
                 </div>

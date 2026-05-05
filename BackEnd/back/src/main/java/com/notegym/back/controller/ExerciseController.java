@@ -1,96 +1,131 @@
 package com.notegym.back.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.notegym.back.model.User;
 import com.notegym.back.repo.UserRepository;
-
 import com.notegym.back.model.Exercise;
 import com.notegym.back.repo.ExerciseRepository;
 
 @RestController
 @RequestMapping("/api/exercises")
+@CrossOrigin(origins = "http://localhost:5173")
 public class ExerciseController {
 
-    @Autowired
-    private ExerciseRepository exerciseRepository;
+    @Autowired private ExerciseRepository exerciseRepository;
+    @Autowired private UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    /** Ejercicios GLOBALES: creados por usuarios con rol ADMIN. */
+    @GetMapping("/global")
+    public ResponseEntity<List<Exercise>> getGlobalExercises() {
+        List<Exercise> exercises = exerciseRepository.findByUser_Role("ADMIN");
+        return ResponseEntity.ok(exercises);
+    }
 
-    @GetMapping
-    public ResponseEntity<List<Exercise>> getAllExercises() {
-        List<Exercise> exercises = exerciseRepository.findAll();
+    /** Ejercicios PERSONALES del usuario actual. */
+    @GetMapping("/personal")
+    public ResponseEntity<List<Exercise>> getPersonalExercises() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        List<Exercise> exercises = exerciseRepository.findByUser(userOpt.get());
         return ResponseEntity.ok(exercises);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Exercise> getExerciseById(@PathVariable Long id) {
-        Optional<Exercise> exerciseOptional = exerciseRepository.findById(id);
-
-        if (exerciseOptional.isPresent()) {
-            return ResponseEntity.ok(exerciseOptional.get());
-        }
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        return exerciseRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+    /** Crear ejercicio propio (autenticado). */
     @PostMapping
-    public ResponseEntity<Exercise> createExercise(@RequestBody Exercise exercise) {
+    public ResponseEntity<Map<String, Object>> createExercise(@RequestBody Exercise exercise) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Optional<User> userOpt = userRepository.findByUsername(username);
-        
-        if (userOpt.isPresent()) {
-            exercise.setUser(userOpt.get());
-            Exercise savedExercise = exerciseRepository.save(exercise);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedExercise);
-        }
-        
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        exercise.setUser(userOpt.get());
+        Exercise saved = exerciseRepository.save(exercise);
+        return ResponseEntity.status(HttpStatus.CREATED).body(safeExercise(saved));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Exercise> updateExercise(@PathVariable Long id, @RequestBody Exercise exerciseDetails) {
-        Optional<Exercise> exerciseOptional = exerciseRepository.findById(id);
+    /**
+     * TRAINER/ADMIN: Crear ejercicio para un usuario específico.
+     * Requiere JWT válido. El ejercicio queda guardado como personal del usuario destino.
+     */
+    @PostMapping("/for/{targetUsername}")
+    public ResponseEntity<Map<String, Object>> createExerciseForUser(
+            @PathVariable String targetUsername,
+            @RequestBody Exercise exercise) {
 
-        if (exerciseOptional.isPresent()) {
-            Exercise existingExercise = exerciseOptional.get();
+        String requesterUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> requesterOpt = userRepository.findByUsername(requesterUsername);
 
-            existingExercise.setName(exerciseDetails.getName());
-            existingExercise.setDescription(exerciseDetails.getDescription());
-            existingExercise.setType(exerciseDetails.getType());
-            existingExercise.setVideoUrl(exerciseDetails.getVideoUrl());
-            existingExercise.setDurationTime(exerciseDetails.getDurationTime());
-            existingExercise.setImagePath(exerciseDetails.getImagePath());
-
-            Exercise updatedExercise = exerciseRepository.save(existingExercise);
-            return ResponseEntity.ok(updatedExercise);
+        if (requesterOpt.isEmpty() || !isTrainerOrAdmin(requesterOpt.get())) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("error", "No tienes permisos para crear ejercicios para otros usuarios. Se requiere rol TRAINER o ADMIN.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
         }
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Optional<User> targetOpt = userRepository.findByUsername(targetUsername);
+        if (targetOpt.isEmpty()) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("error", "No existe ningún usuario con el username: " + targetUsername);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+        }
+
+        exercise.setUser(targetOpt.get());
+        Exercise saved = exerciseRepository.save(exercise);
+
+        Map<String, Object> ok = safeExercise(saved);
+        ok.put("message", "Ejercicio creado correctamente para el usuario: " + targetUsername);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ok);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteExercise(@PathVariable Long id) {
-        if (exerciseRepository.existsById(id)) {
-            exerciseRepository.deleteById(id);
-            return ResponseEntity.ok("Ejercicio eliminado correctamente");
-        }
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        Optional<Exercise> eOpt = exerciseRepository.findById(id);
+        if (eOpt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Ejercicio no encontrado");
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró el ejercicio");
+        Exercise e = eOpt.get();
+        boolean isOwner = e.getUser() != null && e.getUser().getUsername().equals(username);
+        boolean isAdmin = userOpt.isPresent() && "ADMIN".equalsIgnoreCase(userOpt.get().getRole());
+        if (!isOwner && !isAdmin) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Sin permisos");
+
+        exerciseRepository.deleteById(id);
+        return ResponseEntity.ok("Ejercicio eliminado correctamente");
+    }
+
+    private Map<String, Object> safeExercise(Exercise e) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", e.getId());
+        map.put("name", e.getName());
+        map.put("description", e.getDescription());
+        map.put("type", e.getType());
+        map.put("videoUrl", e.getVideoUrl());
+        map.put("imagePath", e.getImagePath());
+        map.put("durationTime", e.getDurationTime());
+        return map;
+    }
+
+    private boolean isTrainerOrAdmin(User user) {
+        if (user.getRole() == null) return false;
+        String r = user.getRole().trim();
+        return r.equalsIgnoreCase("ADMIN")
+            || r.equalsIgnoreCase("TRAINER")
+            || r.equalsIgnoreCase("ADMINISTRADOR");
     }
 }

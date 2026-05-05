@@ -20,38 +20,6 @@ interface Routine {
   isGlobal: boolean;
 }
 
-const GLOBAL_EXERCISES: Exercise[] = [
-  { id: "e1", name: "Press Banca", muscle: "Pecho", equipment: "Barra" },
-  { id: "e2", name: "Sentadilla Libre", muscle: "Pierna", equipment: "Barra" },
-  { id: "e3", name: "Dominadas", muscle: "Espalda", equipment: "Peso Corporal" },
-  { id: "e4", name: "Curl Bíceps", muscle: "Bíceps", equipment: "Mancuernas" },
-  { id: "e5", name: "Press Militar", muscle: "Hombro", equipment: "Barra" }
-];
-
-const GLOBAL_ROUTINES: Routine[] = [
-  { 
-    id: "g1", 
-    name: "Push Day", 
-    description: "Entrenamiento de empuje centrado en hipertrofia y fuerza.",
-    exercises: [GLOBAL_EXERCISES[0], GLOBAL_EXERCISES[4]],
-    isGlobal: true
-  },
-  { 
-    id: "g2", 
-    name: "Pull Day", 
-    description: "Entrenamiento de tracción enfocado en espalda y bíceps.",
-    exercises: [GLOBAL_EXERCISES[2], GLOBAL_EXERCISES[3]],
-    isGlobal: true
-  },
-  { 
-    id: "g3", 
-    name: "Leg Day", 
-    description: "Trabajo completo de tren inferior para fuerza.",
-    exercises: [GLOBAL_EXERCISES[1]],
-    isGlobal: true
-  }
-];
-
 // Funciones para mapear datos del back
 const mapApiExercise = (ex: ApiExercise): Exercise => ({
   id: String(ex.id),
@@ -70,13 +38,20 @@ const mapApiWorkout = (w: Workout): Routine => ({
 
 export default function TrainPage() {
   const navigate = useNavigate();
-  const [allRoutines, setAllRoutines] = useState<Routine[]>(GLOBAL_ROUTINES);
+  const [allRoutines, setAllRoutines] = useState<Routine[]>([]);
   
   useEffect(() => {
     const loadData = async () => {
       try {
-        const apiWorkouts = await apiService.getWorkouts();
-        setAllRoutines([...GLOBAL_ROUTINES, ...apiWorkouts.map(mapApiWorkout)]);
+        const [globalWorkouts, personalWorkouts] = await Promise.all([
+          apiService.getGlobalWorkouts(),
+          apiService.getPersonalWorkouts(),
+        ]);
+        const mapped = [
+          ...globalWorkouts.map(w => ({ ...mapApiWorkout(w), isGlobal: true })),
+          ...personalWorkouts.map(w => ({ ...mapApiWorkout(w), isGlobal: false })),
+        ];
+        setAllRoutines(mapped);
       } catch (err) {
         console.error("Error cargando rutinas:", err);
       }

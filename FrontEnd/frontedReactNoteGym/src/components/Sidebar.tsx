@@ -21,6 +21,10 @@ const adminMenuItems = [
     { name: "Desbloquear Usuarios", path: "/DesbloquearUsers" }
 ];
 
+const trainerMenuItems = [
+    { name: "🏋️ Gestión Entrenador", path: "/trainer" },
+];
+
 export default function Sidebar({ userRole }: SidebarProps) { 
     const [isOpen, setIsOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
@@ -43,11 +47,15 @@ export default function Sidebar({ userRole }: SidebarProps) {
     const handleLogout = () => {
         localStorage.removeItem('username'); 
         localStorage.removeItem('password'); 
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
         navigate('/loginUserGym');
     };
 
     const finalMenuItems = userRole === 'admin' 
         ? [...baseMenuItems, ...adminMenuItems] 
+        : userRole === 'trainer'
+        ? [...baseMenuItems, ...trainerMenuItems]
         : baseMenuItems;
 
 

@@ -4,14 +4,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * CORS gestionado en SecurityConfig via CorsConfigurationSource.
+ * Este fichero existe solo para no romper el contexto Spring al compilar.
+ */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173", "http://localhost:3000") // Frontend URLs
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
+    // CORS configurado en SecurityConfig.corsConfigurationSource()
 }
