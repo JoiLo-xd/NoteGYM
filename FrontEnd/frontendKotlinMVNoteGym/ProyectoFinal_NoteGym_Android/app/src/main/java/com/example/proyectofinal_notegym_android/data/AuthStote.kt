@@ -9,25 +9,20 @@ import kotlinx.coroutines.flow.first
 // DataStore = "localStorage" en Android
 private val Context.dataStore by preferencesDataStore(name = "auth_store")
 
-class AuthStore(private val context: Context) {
+class AuthStore(context: Context) {
 
+    private val context = context.applicationContext
     private val KEY_USERNAME = stringPreferencesKey("username")
-    private val KEY_PASSWORD = stringPreferencesKey("password")
-    private val KEY_NAME = stringPreferencesKey("name")
-    private val KEY_ROLE = stringPreferencesKey("role")
+    private val KEY_TOKEN = stringPreferencesKey("token")
 
-    // React: localStorage.setItem("username", ...)
+    // React: localStorage.setItem("token", ...)
     suspend fun saveSession(
         username: String?,
-        password: String?,
-        name: String?,
-        role: String?
+        token: String?
     ) {
         context.dataStore.edit { prefs ->
             prefs[KEY_USERNAME] = username ?: ""
-            prefs[KEY_PASSWORD] = password ?: ""
-            prefs[KEY_NAME] = name ?: ""
-            prefs[KEY_ROLE] = role ?: ""
+            prefs[KEY_TOKEN] = token ?: ""
         }
     }
 
@@ -35,6 +30,11 @@ class AuthStore(private val context: Context) {
     suspend fun getUsername(): String {
         val prefs = context.dataStore.data.first()
         return prefs[KEY_USERNAME] ?: ""
+    }
+
+    suspend fun getToken(): String {
+        val prefs = context.dataStore.data.first()
+        return prefs[KEY_TOKEN] ?: ""
     }
 
     suspend fun clearSession() {

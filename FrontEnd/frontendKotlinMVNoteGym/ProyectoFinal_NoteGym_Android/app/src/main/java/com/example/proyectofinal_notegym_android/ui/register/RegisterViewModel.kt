@@ -126,23 +126,27 @@ class RegisterViewModel(
                     )
                 )
 
-                _state.value = _state.value.copy(
-                    status = "success",
-                    serverMessage = response.mensaje
-                )
+                if (response.isSuccessful) {
+                    // Éxito: "Usuario registrado correctamente"
+                    val msg = response.body()?.string() ?: "Registro completado"
+                    _state.value = _state.value.copy(
+                        status = "success",
+                        serverMessage = msg
+                    )
+                    onGoLogin()
+                } else {
+                    // Error 400: "El usuario ya existe", etc.
+                    val errorMsg = response.errorBody()?.string() ?: "Error en el registro"
+                    _state.value = _state.value.copy(
+                        status = "error",
+                        serverMessage = errorMsg
+                    )
+                }
 
-                // Igual que en React: vuelve a login
-                onGoLogin()
-
-            } catch (e: HttpException) {
-                _state.value = _state.value.copy(
-                    status = "error",
-                    serverMessage = "Error al registrar (${e.code()})."
-                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     status = "error",
-                    serverMessage = "Error de conexión con el servidor."
+                    serverMessage = "Error de conexión: ${e.message}"
                 )
             }
         }

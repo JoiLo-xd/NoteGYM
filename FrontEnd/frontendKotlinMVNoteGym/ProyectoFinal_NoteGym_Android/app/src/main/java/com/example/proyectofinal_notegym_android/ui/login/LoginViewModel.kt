@@ -78,14 +78,13 @@ class LoginViewModel(
                 )
 
                 if (res.isSuccessful) {
-                    val data = res.body()
+                    // Extraemos el token y quitamos posibles comillas del JSON
+                    val token = res.body()?.string()?.removeSurrounding("\"")
 
-                    // React: localStorage.setItem(...)
+                    // Guardamos la sesión con el token limpio
                     authStore.saveSession(
-                        username = data?.username,
-                        password = data?.password,
-                        name = data?.name,
-                        role = data?.role
+                        username = _state.value.formData.username,
+                        token = token
                     )
 
                     _state.value = _state.value.copy(
@@ -96,9 +95,11 @@ class LoginViewModel(
                     // React: navigate("/dashboard")
                     onGoDashboard()
                 } else {
+                    // Capturamos el mensaje de error del servidor ("Credenciales incorrectas")
+                    val errorMsg = res.errorBody()?.string() ?: "Usuario o contraseña incorrectos."
                     _state.value = _state.value.copy(
                         status = "error",
-                        serverMessage = "Usuario o contraseña incorrectos."
+                        serverMessage = errorMsg
                     )
                 }
             } catch (e: Exception) {

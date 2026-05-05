@@ -9,5 +9,6 @@ data class RegisterRequest(
     val password: String,
     val name: String,
     val mail: String,
-    val sex: String
+    val sex: String,
+    val role: String = "USER"
 )
