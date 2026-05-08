@@ -36,6 +36,13 @@ export interface User {
   password?: string;
 }
 
+export interface Group {
+  id?: number;
+  name: string;
+  description?: string;
+  creationdate?: string;
+}
+
 export interface LoginCredentials { username: string; password?: string; }
 export interface RegisterData { username: string; password?: string; name?: string; mail?: string; sex?: string; }
 
@@ -196,10 +203,63 @@ export const apiService = {
     if (!res.ok) throw new Error(await res.text() || "Error al eliminar usuario");
   },
 
-  // Lista todos los usuarios (admin y trainer pueden usarlo)
   getAllUsers: async (): Promise<User[]> => {
     const res = await fetch(`${API_BASE_URL}/admin/users`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error fetching users");
+    return res.json();
+  },
+
+  // --- GRUPOS ---
+  createGroup: async (): Promise<Group> => {
+    const res = await fetch(`${API_BASE_URL}/groups/create`, {
+      method: "POST", headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text() || "Error creando grupo");
+    return res.json();
+  },
+
+  joinGroup: async (trainerName: string): Promise<Group> => {
+    const res = await fetch(`${API_BASE_URL}/groups/join/${trainerName}`, {
+      method: "POST", headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text() || "Error uniéndose al grupo");
+    return res.json();
+  },
+
+  getMyGroup: async (): Promise<Group> => {
+    const res = await fetch(`${API_BASE_URL}/groups/my-group`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text() || "No tienes grupo");
+    return res.json();
+  },
+
+  getMyGroupUsers: async (): Promise<User[]> => {
+    const res = await fetch(`${API_BASE_URL}/groups/my-group/users`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error obteniendo usuarios del grupo");
+    return res.json();
+  },
+
+  leaveGroup: async (): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/groups/leave`, { method: "DELETE", headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text() || "Error al salir del grupo");
+    return res.json();
+  },
+
+  deleteGroup: async (): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/groups/delete`, { method: "DELETE", headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text() || "Error al eliminar el grupo");
+    return res.json();
+  },
+
+  // --- TRAINER CONTENT ---
+  getTrainerExercises: async (trainerName: string): Promise<Exercise[]> => {
+    const res = await fetch(`${API_BASE_URL}/exercises/trainer/${trainerName}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching trainer exercises");
+    return res.json();
+  },
+
+  getTrainerWorkouts: async (trainerName: string): Promise<Workout[]> => {
+    const res = await fetch(`${API_BASE_URL}/workouts/trainer/${trainerName}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Error fetching trainer workouts");
     return res.json();
   },
 };

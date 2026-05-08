@@ -260,6 +260,7 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
       </div>
 
       {/* Botón flotante del Foro/Comunidad */}
+      {/*
       <button
         onClick={() => navigate('/comunidad')}
         className="fixed bottom-8 left-8 w-16 h-16 bg-[#FF5722] hover:bg-[#F4511E] text-white rounded-full shadow-[0_4px_20px_0_rgba(255,87,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_0_rgba(255,87,34,0.5)] z-40 group flex items-center justify-center transform active:scale-95 border border-orange-400"
@@ -269,6 +270,7 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
       </button>
+      */}
 
     </div>
   );

@@ -59,6 +59,18 @@ public class WorkoutController {
     }
 
     /**
+     * Workouts creados por un entrenador específico.
+     */
+    @GetMapping("/trainer/{trainerName}")
+    public ResponseEntity<List<Workout>> getTrainerWorkouts(@PathVariable String trainerName) {
+        Optional<User> userOpt = userRepository.findByUsername(trainerName);
+        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        List<Workout> workouts = workoutRepository.findByUser(userOpt.get());
+        return ResponseEntity.ok(workouts);
+    }
+
+    /**
      * Crear workout propio (el creador será el usuario actual).
      * - Si es ADMIN → quedará como global (visible para todos).
      * - Si es USER o TRAINER → quedará como personal (solo suyo).

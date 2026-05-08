@@ -11,7 +11,7 @@ const baseMenuItems = [
     { name: "Mi Perfil", path: "/profile" },
     { name: "Mis Rutinas", path: "/rutinas" },
     { name: "Entrenar", path: "/entrenar" },
-    { name: "Comunidad", path: "/comunidad" },
+    { name: "Grupos", path: "/grupos" },
     { name: "Estadísticas", path: "/stats" },
 ];
 

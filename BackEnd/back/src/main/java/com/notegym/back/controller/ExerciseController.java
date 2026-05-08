@@ -48,6 +48,18 @@ public class ExerciseController {
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+    /**
+     * Ejercicios creados por un entrenador específico.
+     */
+    @GetMapping("/trainer/{trainerName}")
+    public ResponseEntity<List<Exercise>> getTrainerExercises(@PathVariable String trainerName) {
+        Optional<User> userOpt = userRepository.findByUsername(trainerName);
+        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        List<Exercise> exercises = exerciseRepository.findByUser(userOpt.get());
+        return ResponseEntity.ok(exercises);
+    }
+
     /** Crear ejercicio propio (autenticado). */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createExercise(@RequestBody Exercise exercise) {

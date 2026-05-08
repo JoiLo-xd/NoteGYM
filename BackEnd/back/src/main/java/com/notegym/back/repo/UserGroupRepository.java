@@ -8,7 +8,7 @@ import java.util.List;
 public interface UserGroupRepository extends JpaRepository<UserGroup, UserGroupId> {
     
     // Buscar todos los miembros de un grupo específico
-    List<UserGroup> findByGroupId(Long groupId);
+    List<UserGroup> findByGroupId(Integer groupId);
 
     // Buscar todos los grupos a los que pertenece un usuario
     List<UserGroup> findByUserUsername(String username);

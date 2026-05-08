@@ -11,6 +11,7 @@ import RoutinesPage from './components/RoutinesPage';
 import AdminRegisterGym from './components/admin/AdminRegisterGym';
 import TrainPage from './components/TrainPage';
 import ForumPage from './components/ForumPage';
+import GroupsPage from './components/GroupsPage';
 import TrainerPage from './components/trainer/TrainerPage';
 import { SnackProvider } from './components/SnackProvider';
 
@@ -29,7 +30,7 @@ function App() {
                     <Route path='/rutinas' element={<RoutinesPage />} />
                     <Route path='/entrenar' element={<TrainPage />} />
                     <Route path='/comunidad' element={<ForumPage />} />
-
+                    <Route path='/grupos' element={<GroupsPage />} />
                     <Route path="/admin/ModUsers" element={
                         <ProtectedRoute requiredRole="admin">
                             <ModUsers />
