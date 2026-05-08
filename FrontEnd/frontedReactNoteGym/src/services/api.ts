@@ -238,13 +238,13 @@ export const apiService = {
     return res.json();
   },
 
-  leaveGroup: async (): Promise<any> => {
+  leaveGroup: async (): Promise<{ message: string }> => {
     const res = await fetch(`${API_BASE_URL}/groups/leave`, { method: "DELETE", headers: getHeaders() });
     if (!res.ok) throw new Error(await res.text() || "Error al salir del grupo");
     return res.json();
   },
 
-  deleteGroup: async (): Promise<any> => {
+  deleteGroup: async (): Promise<{ message: string }> => {
     const res = await fetch(`${API_BASE_URL}/groups/delete`, { method: "DELETE", headers: getHeaders() });
     if (!res.ok) throw new Error(await res.text() || "Error al eliminar el grupo");
     return res.json();
