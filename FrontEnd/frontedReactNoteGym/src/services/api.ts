@@ -34,6 +34,8 @@ export interface User {
   sex: string;
   role?: string;
   password?: string;
+  blocked?: boolean;
+  triesLogIn?: number;
 }
 
 export interface Group {
@@ -41,6 +43,14 @@ export interface Group {
   name: string;
   description?: string;
   creationdate?: string;
+}
+
+export interface SupportTicket {
+  id: number;
+  username: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
 }
 
 export interface LoginCredentials { username: string; password?: string; }
@@ -53,8 +63,21 @@ export const apiService = {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     });
-    if (!res.ok) throw new Error(await res.text() || "Error en el login");
-    return res.text();
+    const body = await res.text();
+    if (!res.ok) {
+      if (body === 'ACCOUNT_BLOCKED') {
+        throw new Error('ACCOUNT_BLOCKED');
+      }
+      if (body.startsWith('WRONG_PASSWORD:')) {
+        const remaining = body.split(':')[1];
+        throw new Error(`WRONG_PASSWORD:${remaining}`);
+      }
+      if (body === 'USER_NOT_FOUND') {
+        throw new Error('USER_NOT_FOUND');
+      }
+      throw new Error(body || 'Error en el login');
+    }
+    return body;
   },
 
   register: async (userData: RegisterData): Promise<string> => {
@@ -158,6 +181,22 @@ export const apiService = {
     return res.json();
   },
 
+  removeExerciseFromWorkout: async (workoutId: number, exerciseId: number | string): Promise<Workout> => {
+    const res = await fetch(`${API_BASE_URL}/workouts/${workoutId}/exercises/${exerciseId}`, {
+      method: "DELETE", headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error removing exercise from workout");
+    return res.json();
+  },
+
+  updateWorkout: async (workoutId: number, workout: Partial<Workout>): Promise<Workout> => {
+    const res = await fetch(`${API_BASE_URL}/workouts/${workoutId}`, {
+      method: "PUT", headers: getHeaders(true), body: JSON.stringify(workout),
+    });
+    if (!res.ok) throw new Error("Error updating workout");
+    return res.json();
+  },
+
   deleteWorkout: async (id: number): Promise<void> => {
     const res = await fetch(`${API_BASE_URL}/workouts/${id}`, { method: "DELETE", headers: getHeaders() });
     if (!res.ok) throw new Error("Error deleting workout");
@@ -185,6 +224,15 @@ export const apiService = {
     });
     const text = await res.text();
     if (!res.ok) throw new Error(text || "Error al desbloquear usuario");
+    return text;
+  },
+
+  unblockUserAdmin: async (targetUsername: string): Promise<string> => {
+    const res = await fetch(`${API_BASE_URL}/admin/users/${targetUsername}/unblock`, {
+      method: 'POST', headers: getHeaders()
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(text || 'Error al desbloquear usuario');
     return text;
   },
 
@@ -261,5 +309,43 @@ export const apiService = {
     const res = await fetch(`${API_BASE_URL}/workouts/trainer/${trainerName}`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Error fetching trainer workouts");
     return res.json();
+  },
+
+  // --- SOPORTE / TICKETS ---
+  sendSupportTicket: async (username: string, message: string): Promise<string> => {
+    const res = await fetch(`${API_BASE_URL}/support/ticket`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, message }),
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(text || 'Error al enviar el ticket');
+    return text;
+  },
+
+  getUnreadTickets: async (): Promise<SupportTicket[]> => {
+    const res = await fetch(`${API_BASE_URL}/support/tickets/unread`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Error fetching tickets');
+    return res.json();
+  },
+
+  getUnreadTicketCount: async (): Promise<number> => {
+    const res = await fetch(`${API_BASE_URL}/support/tickets/count`, { headers: getHeaders() });
+    if (!res.ok) return 0;
+    return res.json();
+  },
+
+  markTicketRead: async (ticketId: number): Promise<void> => {
+    const res = await fetch(`${API_BASE_URL}/support/tickets/${ticketId}/read`, {
+      method: 'PUT', headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Error marking ticket as read');
+  },
+
+  markAllTicketsRead: async (): Promise<void> => {
+    const res = await fetch(`${API_BASE_URL}/support/tickets/read-all`, {
+      method: 'PUT', headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Error marking all tickets as read');
   },
 };

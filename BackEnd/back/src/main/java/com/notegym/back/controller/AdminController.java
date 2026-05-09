@@ -95,6 +95,29 @@ public class AdminController {
         return ResponseEntity.ok("Usuario '" + username + "' eliminado correctamente.");
     }
 
+    /**
+     * Desbloquea la cuenta de un usuario bloqueado.
+     * Solo el admin puede desbloquear cuentas.
+     */
+    @PostMapping("/users/{username}/unblock")
+    public ResponseEntity<String> unblockUser(@PathVariable String username) {
+        if (!isAdmin()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos de administrador.");
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("El usuario no existe.");
+        }
+
+        User user = userOpt.get();
+        user.setBlocked(false);
+        user.setTriesLogIn(0);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Cuenta de '" + username + "' desbloqueada correctamente.");
+    }
+
     // ===== HELPER =====
     private boolean isAdmin() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

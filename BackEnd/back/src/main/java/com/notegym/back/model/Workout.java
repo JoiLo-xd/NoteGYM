@@ -30,6 +30,7 @@ public class Workout  implements java.io.Serializable {
      private User user;
      private String description;
      private String name;
+     private Boolean isGlobal = false;
      private Set<User> users = new HashSet<>();
      private Set<Exercise> exercises = new HashSet<>();
 
@@ -90,6 +91,15 @@ public class Workout  implements java.io.Serializable {
     
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Column(name="is_global", nullable=false)
+    public Boolean getIsGlobal() {
+        return this.isGlobal;
+    }
+    
+    public void setIsGlobal(Boolean isGlobal) {
+        this.isGlobal = isGlobal;
     }
 
 @JsonIgnore

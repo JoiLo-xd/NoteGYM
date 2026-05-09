@@ -59,20 +59,45 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequestTO request) {
-        // Buscar al usuario por su username
         Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+
+            // Comprobar si la cuenta está bloqueada
+            if (Boolean.TRUE.equals(user.getBlocked())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("ACCOUNT_BLOCKED");
+            }
+
             // Comprobar si la contraseña coincide
             if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                // Generar el token
+                // Login correcto → resetear contador de intentos
+                user.setTriesLogIn(0);
+                userRepository.save(user);
                 String token = jwtService.generateToken(user);
                 return ResponseEntity.ok(token);
+            } else {
+                // Contraseña incorrecta → incrementar intentos
+                int tries = user.getTriesLogIn() == null ? 0 : user.getTriesLogIn();
+                tries++;
+                user.setTriesLogIn(tries);
+
+                if (tries >= 3) {
+                    user.setBlocked(true);
+                    userRepository.save(user);
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("ACCOUNT_BLOCKED");
+                }
+
+                userRepository.save(user);
+                int remaining = 3 - tries;
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("WRONG_PASSWORD:" + remaining);
             }
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("USER_NOT_FOUND");
     }
 
     

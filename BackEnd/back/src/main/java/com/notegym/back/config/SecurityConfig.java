@@ -41,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Login y registro: públicos
                         .requestMatchers("/auth/**").permitAll()
+                        // Endpoint público de tickets de soporte (usuarios bloqueados no tienen JWT)
+                        .requestMatchers(HttpMethod.POST, "/api/support/ticket").permitAll()
                         // /error debe ser accesible para que Spring devuelva el error real al cliente
                         .requestMatchers("/error").permitAll()
                         // Todo lo demás requiere JWT válido

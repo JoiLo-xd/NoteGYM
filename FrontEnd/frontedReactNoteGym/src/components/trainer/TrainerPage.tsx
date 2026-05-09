@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderGym from '../headerGym';
 import Sidebar from '../Sidebar';
@@ -10,9 +10,33 @@ export default function TrainerPage() {
     const { createSnack } = useSnack();
 
     // Crear entrenamiento para usuario
-    const [wForm, setWForm] = useState({ targetUser: '', name: '', description: '' });
+    const [wForm, setWForm] = useState({ targetUser: '', name: '', description: '', selectedExercises: [] as any[] });
     const [wStatus, setWStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [wMsg, setWMsg] = useState('');
+
+    const [allExercises, setAllExercises] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchExercises = async () => {
+            try {
+                const [gEx, pEx] = await Promise.all([
+                    apiService.getGlobalExercises(),
+                    apiService.getPersonalExercises()
+                ]);
+                const mapApiExercise = (ex: any) => ({
+                    id: String(ex.id),
+                    name: ex.name,
+                    muscle: ex.type || "",
+                    equipment: ex.description || ""
+                });
+                const combined = Array.from(new Map([...gEx.map(mapApiExercise), ...pEx.map(mapApiExercise)].map(ex => [ex.id, ex])).values());
+                setAllExercises(combined);
+            } catch (err) {
+                console.error("Error fetching exercises", err);
+            }
+        };
+        fetchExercises();
+    }, []);
 
     // Crear ejercicio para usuario
     const [eForm, setEForm] = useState({ targetUser: '', name: '', muscle: '', equipment: '' });
@@ -28,12 +52,17 @@ export default function TrainerPage() {
         }
         setWStatus('loading');
         try {
-            await apiService.createWorkoutForUser(wForm.targetUser.trim(), {
+            const savedWorkout = await apiService.createWorkoutForUser(wForm.targetUser.trim(), {
                 name: wForm.name, description: wForm.description, exercises: []
             });
+            for (const ex of wForm.selectedExercises) {
+                if (savedWorkout.id) {
+                    await apiService.addExerciseToWorkout(savedWorkout.id, ex.id);
+                }
+            }
             setWStatus('success');
             setWMsg(`✅ Entrenamiento "${wForm.name}" creado para ${wForm.targetUser}`);
-            setWForm({ targetUser: '', name: '', description: '' });
+            setWForm({ targetUser: '', name: '', description: '', selectedExercises: [] });
             createSnack(`Entrenamiento asignado a ${wForm.targetUser}`, 'success');
         } catch (err) {
             setWStatus('error');
@@ -101,6 +130,31 @@ export default function TrainerPage() {
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción (opcional)</label>
                                     <textarea value={wForm.description} onChange={e => setWForm({ ...wForm, description: e.target.value })}
                                         rows={2} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] font-medium text-gray-800 resize-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ejercicios de la rutina</label>
+                                    <div className="grid grid-cols-2 gap-2 max-h-[96px] overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200 custom-scrollbar">
+                                      {allExercises.length === 0 && <p className="text-xs text-gray-400 col-span-2">No hay ejercicios disponibles.</p>}
+                                      {allExercises.map(ex => {
+                                        const isSelected = wForm.selectedExercises.some(e => e.id === ex.id);
+                                        return (
+                                          <div 
+                                            key={ex.id} 
+                                            onClick={() => {
+                                                if (isSelected) {
+                                                    setWForm({ ...wForm, selectedExercises: wForm.selectedExercises.filter(e => e.id !== ex.id) });
+                                                } else {
+                                                    setWForm({ ...wForm, selectedExercises: [...wForm.selectedExercises, ex] });
+                                                }
+                                            }}
+                                            className={`p-2 rounded-lg border cursor-pointer font-semibold text-xs transition-all ${isSelected ? "bg-[#FF5722] text-white border-[#FF5722] shadow-md" : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"}`}
+                                          >
+                                            {isSelected && <span className="mr-1">✓</span>}
+                                            {ex.name}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
                                 </div>
                                 <button onClick={handleCreateWorkout} disabled={wStatus === 'loading'}
                                     className="w-full py-3 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold rounded-xl transition disabled:opacity-50 shadow-md">

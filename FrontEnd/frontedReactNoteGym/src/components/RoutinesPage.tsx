@@ -92,7 +92,20 @@ export default function RoutinesPage() {
 
   // Form states
   const [exForm, setExForm] = useState({ name: "", muscle: "", equipment: "" });
-  const [routForm, setRoutForm] = useState({ name: "", description: "", selectedExercises: [] as Exercise[], targetUser: "" });
+  const [routForm, setRoutForm] = useState({ id: "", name: "", description: "", selectedExercises: [] as Exercise[], targetUser: "", originalExercises: [] as Exercise[] });
+
+  const handleOpenEdit = (routine: Routine, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRoutForm({
+      id: routine.id,
+      name: routine.name,
+      description: routine.description,
+      selectedExercises: [...routine.exercises],
+      originalExercises: [...routine.exercises],
+      targetUser: ""
+    });
+    setIsRoutineModalOpen(true);
+  };
 
   const handleAssignClick = (routine: Routine) => {
     setSelectedRoutine(routine);
@@ -145,40 +158,73 @@ export default function RoutinesPage() {
       return;
     }
     try {
-      let savedWorkout;
-      if (routForm.targetUser.trim()) {
-        // Trainer crea para usuario específico
-        savedWorkout = await apiService.createWorkoutForUser(routForm.targetUser.trim(), {
+      if (routForm.id) {
+        // Edit mode
+        await apiService.updateWorkout(Number(routForm.id), {
           name: routForm.name, description: routForm.description, exercises: []
         });
+
+        // Handle exercises diff
+        const originalIds = routForm.originalExercises.map(e => e.id);
+        const selectedIds = routForm.selectedExercises.map(e => e.id);
+
+        const toAdd = routForm.selectedExercises.filter(e => !originalIds.includes(e.id));
+        const toRemove = routForm.originalExercises.filter(e => !selectedIds.includes(e.id));
+
+        for (const ex of toAdd) {
+          await apiService.addExerciseToWorkout(Number(routForm.id), ex.id);
+        }
+        for (const ex of toRemove) {
+          await apiService.removeExerciseFromWorkout(Number(routForm.id), ex.id);
+        }
+
+        const updatedRoutine: Routine = {
+          id: routForm.id,
+          name: routForm.name,
+          description: routForm.description,
+          exercises: routForm.selectedExercises,
+          isGlobal: false
+        };
+
+        setPersonalRoutines(prev => prev.map(r => r.id === routForm.id ? updatedRoutine : r));
+        createSnack("Rutina actualizada correctamente", "success");
       } else {
-        savedWorkout = await apiService.createWorkout({
-          name: routForm.name, description: routForm.description, exercises: []
-        });
-      }
+        // Create mode
+        let savedWorkout;
+        if (routForm.targetUser.trim()) {
+          // Trainer crea para usuario específico
+          savedWorkout = await apiService.createWorkoutForUser(routForm.targetUser.trim(), {
+            name: routForm.name, description: routForm.description, exercises: []
+          });
+        } else {
+          savedWorkout = await apiService.createWorkout({
+            name: routForm.name, description: routForm.description, exercises: []
+          });
+        }
 
-      for (const ex of routForm.selectedExercises) {
-        await apiService.addExerciseToWorkout(savedWorkout.id!, ex.id);
-      }
+        for (const ex of routForm.selectedExercises) {
+          await apiService.addExerciseToWorkout(savedWorkout.id!, ex.id);
+        }
 
-      const newRoutine: Routine = {
-        id: String(savedWorkout.id),
-        name: routForm.name,
-        description: routForm.description,
-        exercises: routForm.selectedExercises,
-        isGlobal: false
-      };
+        const newRoutine: Routine = {
+          id: String(savedWorkout.id),
+          name: routForm.name,
+          description: routForm.description,
+          exercises: routForm.selectedExercises,
+          isGlobal: false
+        };
 
-      // Si es para otro usuario no lo añadimos a la lista local
-      if (!routForm.targetUser.trim()) {
-        setPersonalRoutines(prev => [...prev, newRoutine]);
+        // Si es para otro usuario no lo añadimos a la lista local
+        if (!routForm.targetUser.trim()) {
+          setPersonalRoutines(prev => [...prev, newRoutine]);
+        }
+        createSnack(routForm.targetUser.trim() ? `Rutina creada para ${routForm.targetUser}` : "Rutina creada correctamente", "success");
       }
       setIsRoutineModalOpen(false);
-      setRoutForm({ name: "", description: "", selectedExercises: [], targetUser: "" });
-      createSnack(routForm.targetUser.trim() ? `Rutina creada para ${routForm.targetUser}` : "Rutina creada correctamente", "success");
+      setRoutForm({ id: "", name: "", description: "", selectedExercises: [], targetUser: "", originalExercises: [] });
     } catch (err) {
       console.error(err);
-      createSnack("Error creando la rutina", "error");
+      createSnack(routForm.id ? "Error actualizando la rutina" : "Error creando la rutina", "error");
     }
   };
 
@@ -218,7 +264,8 @@ export default function RoutinesPage() {
     });
   };
 
-  const allExercisesForPicker = [...globalExercises, ...personalExercises];
+  // Evitamos duplicados usando un Map (un Admin obtiene los mismos ejercicios como globales y personales)
+  const allExercisesForPicker = Array.from(new Map([...globalExercises, ...personalExercises].map(ex => [ex.id, ex])).values());
 
   return (
     <div className="min-h-screen gym-bg flex flex-col">
@@ -312,7 +359,10 @@ export default function RoutinesPage() {
                 </h2>
                 {activeTab === "personales" && canCreate && (
                   <button 
-                    onClick={() => setIsRoutineModalOpen(true)}
+                    onClick={() => {
+                      setRoutForm({ id: "", name: "", description: "", selectedExercises: [], targetUser: "", originalExercises: [] });
+                      setIsRoutineModalOpen(true);
+                    }}
                     className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition shadow-md"
                   >
                     + Crear Entrenamiento
@@ -329,13 +379,22 @@ export default function RoutinesPage() {
                   (activeTab === "globales" ? globalRoutines : personalRoutines).map(routine => (
                     <div key={routine.id} className="group bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-[#FF5722]/30 transition flex flex-col h-full relative">
                       {activeTab === "personales" && (
-                        <button 
-                          onClick={(e) => handleDeleteRoutine(routine.id, e)}
-                          className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition duration-200 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-xl"
-                          title="Eliminar entrenamiento"
-                        >
-                          <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
+                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition duration-200">
+                          <button 
+                            onClick={(e) => handleOpenEdit(routine, e)}
+                            className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl"
+                            title="Editar entrenamiento"
+                          >
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          <button 
+                            onClick={(e) => handleDeleteRoutine(routine.id, e)}
+                            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-xl"
+                            title="Eliminar entrenamiento"
+                          >
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
                       )}
                       <div className="flex-1">
                         <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-[#FF5722] mb-4">
@@ -397,7 +456,7 @@ export default function RoutinesPage() {
         {isRoutineModalOpen && (
            <div className="fixed inset-0 z-50 flex justify-center items-center px-4 bg-gray-900/60 backdrop-blur-sm">
              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-                <h3 className="text-xl font-bold text-[#FF5722] mb-4">Crear Entrenamiento Personal</h3>
+                <h3 className="text-xl font-bold text-[#FF5722] mb-4">{routForm.id ? "Editar Entrenamiento" : "Crear Entrenamiento Personal"}</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del entrenamiento</label>
@@ -409,7 +468,7 @@ export default function RoutinesPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Selecciona los ejercicios incluidos</label>
-                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[120px] overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200 custom-scrollbar">
                       {allExercisesForPicker.map(ex => {
                         const isSelected = routForm.selectedExercises.some(e => e.id === ex.id);
                         return (
@@ -426,7 +485,7 @@ export default function RoutinesPage() {
                     </div>
                   </div>
                   {/* Campo usuario destino (solo trainer/admin) */}
-                  {canCreate && (
+                  {canCreate && !routForm.id && (
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Asignar a usuario (opcional)</label>
                       <input type="text" value={routForm.targetUser} onChange={e => setRoutForm({...routForm, targetUser: e.target.value})} placeholder="Username del usuario (dejar vacío para ti mismo)" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] font-medium text-gray-800"/>
@@ -434,8 +493,8 @@ export default function RoutinesPage() {
                     </div>
                   )}
                   <div className="flex gap-3 pt-4">
-                    <button onClick={handleSaveRoutine} className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-gray-800 transition">Crear Entrenamiento</button>
-                    <button onClick={() => { setIsRoutineModalOpen(false); setRoutForm({ name: "", description: "", selectedExercises: [], targetUser: "" }); }} className="py-3 px-6 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Cancelar</button>
+                    <button onClick={handleSaveRoutine} className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold shadow-md hover:bg-gray-800 transition">{routForm.id ? "Guardar Cambios" : "Crear Entrenamiento"}</button>
+                    <button onClick={() => { setIsRoutineModalOpen(false); setRoutForm({ id: "", name: "", description: "", selectedExercises: [], targetUser: "", originalExercises: [] }); }} className="py-3 px-6 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Cancelar</button>
                   </div>
                 </div>
              </div>
