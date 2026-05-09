@@ -307,14 +307,12 @@ export default function RoutinesPage() {
             <div className="animate-in fade-in duration-300">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Librería de Ejercicios</h2>
-                {canCreate && (
-                  <button 
-                    onClick={() => setIsExerciseModalOpen(true)}
-                    className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition"
-                  >
-                    + Crear Ejercicio Personal
-                  </button>
-                )}
+                <button 
+                  onClick={() => setIsExerciseModalOpen(true)}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition"
+                >
+                  + Crear Ejercicio Personal
+                </button>
               </div>
               {/* Subtabs globales/personales */}
               <div className="flex gap-3 mb-6">
@@ -357,7 +355,7 @@ export default function RoutinesPage() {
                 <h2 className="text-2xl font-bold text-gray-800">
                   {activeTab === "globales" ? "Rutinas Globales" : "Tus Rutinas Personales"}
                 </h2>
-                {activeTab === "personales" && canCreate && (
+                {activeTab === "personales" && (
                   <button 
                     onClick={() => {
                       setRoutForm({ id: "", name: "", description: "", selectedExercises: [], targetUser: "", originalExercises: [] });

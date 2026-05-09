@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import HeaderGym from "./headerGym";
 import Sidebar from "./Sidebar";
 import { apiService } from "../services/api";
@@ -38,6 +38,7 @@ const mapApiWorkout = (w: Workout): Routine => ({
 
 export default function TrainPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [allRoutines, setAllRoutines] = useState<Routine[]>([]);
   
   useEffect(() => {
@@ -70,7 +71,13 @@ export default function TrainPage() {
   });
   const [searchFilter, setSearchFilter] = useState("");
 
-  const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
+  const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(() => {
+    const state = location.state as { workout?: Workout } | null;
+    if (state && state.workout) {
+      return mapApiWorkout(state.workout);
+    }
+    return null;
+  });
   
   // Trainer state
   const [currentExIndex, setCurrentExIndex] = useState(0);
@@ -150,6 +157,14 @@ export default function TrainPage() {
     setCurrentExIndex(0);
     resetExSettings();
   };
+
+  useEffect(() => {
+    const state = location.state as { workout?: Workout } | null;
+    if (state && state.workout) {
+      // Limpiamos el estado para no repetir la acción al recargar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const formattedTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);

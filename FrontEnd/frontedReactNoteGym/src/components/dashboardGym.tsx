@@ -231,14 +231,30 @@ export default function DashboardGym({ userRole: propsRole, userName: propsName 
                       </div>
                     ) : calendarNotes[dateKey] ? (
                       <div className="group relative bg-orange-50/50 p-4 rounded-xl border border-orange-100 shadow-sm transition-all hover:shadow-md hover:border-[#FF5722]/30">
-                        <p className="text-gray-800 text-sm whitespace-pre-wrap font-medium">{calendarNotes[dateKey]}</p>
-                        <button 
-                          onClick={() => setIsEditingNote(true)}
-                          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-[#FF5722] hover:bg-orange-100 p-2 rounded-lg transition-all"
-                          title="Editar nota"
-                        >
-                          <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
+                        <p className="text-gray-800 text-sm whitespace-pre-wrap font-medium pr-16">{calendarNotes[dateKey]}</p>
+                        <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          <button 
+                            onClick={() => setIsEditingNote(true)}
+                            className="text-[#FF5722] hover:bg-orange-100 p-2 rounded-lg transition-all"
+                            title="Editar nota"
+                          >
+                            <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const updated = { ...calendarNotes };
+                              delete updated[dateKey];
+                              setCalendarNotes(updated);
+                              setNoteText("");
+                              localStorage.setItem('user_calendar_notes', JSON.stringify(updated));
+                              createSnack("Nota eliminada", "success");
+                            }}
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+                            title="Borrar nota"
+                          >
+                            <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <p className="text-xs text-gray-400 italic">No hay notas registradas para este día.</p>

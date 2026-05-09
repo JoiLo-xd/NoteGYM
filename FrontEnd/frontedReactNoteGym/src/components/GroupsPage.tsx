@@ -26,7 +26,11 @@ export default function GroupsPage() {
     const [exForm, setExForm] = useState({ name: '', type: '', description: '' });
 
     const [showWkModal, setShowWkModal] = useState(false);
-    const [wkForm, setWkForm] = useState({ name: '', description: '' });
+    const [wkForm, setWkForm] = useState({ name: '', description: '', selectedExercises: [] as Exercise[] });
+
+    const [showEditWkModal, setShowEditWkModal] = useState(false);
+    const [editWkId, setEditWkId] = useState<number | null>(null);
+    const [editWkForm, setEditWkForm] = useState({ name: '', description: '', selectedExercises: [] as Exercise[], originalExercises: [] as Exercise[] });
 
     useEffect(() => {
         fetchMyGroup();
@@ -114,17 +118,65 @@ export default function GroupsPage() {
     const handleAddWorkout = async () => {
         if (!wkForm.name) return;
         try {
-            await apiService.createWorkout({
+            const savedWorkout = await apiService.createWorkout({
                 name: wkForm.name,
                 description: wkForm.description,
                 exercises: []
             });
-            createSnack("Entrenamiento añadido al grupo", "success");
+            // Añadir ejercicios seleccionados al workout recién creado
+            if (savedWorkout.id && wkForm.selectedExercises.length > 0) {
+                for (const ex of wkForm.selectedExercises) {
+                    await apiService.addExerciseToWorkout(savedWorkout.id, ex.id!);
+                }
+            }
+            createSnack(`Entrenamiento creado con ${wkForm.selectedExercises.length} ejercicio(s)`, "success");
             setShowWkModal(false);
-            setWkForm({ name: '', description: '' });
+            setWkForm({ name: '', description: '', selectedExercises: [] });
             if (group) fetchTrainerContent(group.name);
         } catch {
             createSnack("Error al crear entrenamiento", "error");
+        }
+    };
+
+    const handleOpenEditWorkout = (w: Workout) => {
+        setEditWkId(w.id!);
+        setEditWkForm({
+            name: w.name,
+            description: w.description,
+            selectedExercises: [...(w.exercises || [])],
+            originalExercises: [...(w.exercises || [])],
+        });
+        setShowEditWkModal(true);
+    };
+
+    const handleSaveEditWorkout = async () => {
+        if (!editWkId || !editWkForm.name) return;
+        try {
+            await apiService.updateWorkout(editWkId, { name: editWkForm.name, description: editWkForm.description, exercises: [] });
+            const origIds = editWkForm.originalExercises.map(e => String(e.id));
+            const selIds  = editWkForm.selectedExercises.map(e => String(e.id));
+            for (const ex of editWkForm.selectedExercises) {
+                if (!origIds.includes(String(ex.id))) await apiService.addExerciseToWorkout(editWkId, ex.id!);
+            }
+            for (const ex of editWkForm.originalExercises) {
+                if (!selIds.includes(String(ex.id))) await apiService.removeExerciseFromWorkout(editWkId, ex.id!);
+            }
+            createSnack("Entrenamiento actualizado", "success");
+            setShowEditWkModal(false);
+            if (group) fetchTrainerContent(group.name);
+        } catch {
+            createSnack("Error al actualizar el entrenamiento", "error");
+        }
+    };
+
+    const handleDeleteWorkout = async (id: number) => {
+        if (!window.confirm("¿Eliminar este entrenamiento del grupo?")) return;
+        try {
+            await apiService.deleteWorkout(id);
+            createSnack("Entrenamiento eliminado", "success");
+            if (group) fetchTrainerContent(group.name);
+        } catch {
+            createSnack("Error al eliminar el entrenamiento", "error");
         }
     };
 
@@ -261,8 +313,26 @@ export default function GroupsPage() {
                                     ) : (
                                         <div className="space-y-3">
                                             {workouts.map(w => (
-                                                <div key={w.id} className="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-[#FF5722] transition group">
-                                                    <h4 className="font-bold text-gray-900 text-lg">{w.name}</h4>
+                                                <div key={w.id} className="relative p-4 rounded-xl bg-gray-50 border border-gray-200 hover:border-[#FF5722] transition group">
+                                                    {role === 'trainer' && (
+                                                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                                            <button
+                                                                onClick={() => handleOpenEditWorkout(w)}
+                                                                className="p-1.5 text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg"
+                                                                title="Editar"
+                                                            >
+                                                                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteWorkout(w.id!)}
+                                                                className="p-1.5 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg"
+                                                                title="Eliminar"
+                                                            >
+                                                                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    <h4 className="font-bold text-gray-900 text-lg pr-16">{w.name}</h4>
                                                     {w.description && <p className="text-sm text-gray-600 mt-1">{w.description}</p>}
                                                     <div className="mt-3 flex gap-2 flex-wrap">
                                                         {w.exercises?.map(ex => (
@@ -271,6 +341,14 @@ export default function GroupsPage() {
                                                             </span>
                                                         ))}
                                                     </div>
+                                                    {role !== 'trainer' && (
+                                                        <button
+                                                            onClick={() => navigate('/entrenar', { state: { workout: w } })}
+                                                            className="mt-4 w-full py-2 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold rounded-xl text-sm transition shadow-sm hover:-translate-y-0.5"
+                                                        >
+                                                            🏋️‍♂️ Hacer Ejercicio
+                                                        </button>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -362,16 +440,116 @@ export default function GroupsPage() {
                 {/* MODAL ENTRENAMIENTO */}
                 {showWkModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
-                            <button onClick={() => setShowWkModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800">
+                        <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+                            <button onClick={() => { setShowWkModal(false); setWkForm({ name: '', description: '', selectedExercises: [] }); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800">
                                 ✖
                             </button>
                             <h3 className="text-2xl font-bold text-gray-800 mb-4">Añadir Entrenamiento al Grupo</h3>
                             <div className="space-y-4">
-                                <input type="text" placeholder="Nombre del entrenamiento" value={wkForm.name} onChange={e => setWkForm({...wkForm, name: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722]" />
-                                <textarea placeholder="Descripción del entrenamiento" value={wkForm.description} onChange={e => setWkForm({...wkForm, description: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] min-h-[100px] resize-none" />
-                                <button onClick={handleAddWorkout} className="w-full py-3 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold rounded-xl shadow-md">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del entrenamiento</label>
+                                    <input type="text" placeholder="Ej: Día de Fuerza en Pierna" value={wkForm.name} onChange={e => setWkForm({...wkForm, name: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] font-semibold text-gray-800" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
+                                    <textarea placeholder="Descripción del entrenamiento" value={wkForm.description} onChange={e => setWkForm({...wkForm, description: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] min-h-[80px] resize-none font-medium text-gray-800" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ejercicios incluidos</label>
+                                    {exercises.length === 0 ? (
+                                        <p className="text-xs text-gray-400 italic p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                            No tienes ejercicios creados todavía. Crea ejercicios primero con el botón "+ Ejercicio".
+                                        </p>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2 max-h-[180px] overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200">
+                                            {exercises.map(ex => {
+                                                const isSelected = wkForm.selectedExercises.some(e => e.id === ex.id);
+                                                return (
+                                                    <div
+                                                        key={ex.id}
+                                                        onClick={() => setWkForm(prev => {
+                                                            const exists = prev.selectedExercises.some(e => e.id === ex.id);
+                                                            return {
+                                                                ...prev,
+                                                                selectedExercises: exists
+                                                                    ? prev.selectedExercises.filter(e => e.id !== ex.id)
+                                                                    : [...prev.selectedExercises, ex]
+                                                            };
+                                                        })}
+                                                        className={`p-2.5 rounded-lg border cursor-pointer font-semibold text-sm transition-all select-none ${
+                                                            isSelected
+                                                                ? 'bg-[#FF5722] text-white border-[#FF5722] shadow-sm'
+                                                                : 'bg-white text-gray-700 border-gray-200 hover:border-[#FF5722]/50'
+                                                        }`}
+                                                    >
+                                                        {isSelected && <span className="mr-1">✓</span>}
+                                                        <span className="truncate block">{ex.name}</span>
+                                                        {ex.type && <span className="text-[10px] opacity-70 block">{ex.type}</span>}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    {wkForm.selectedExercises.length > 0 && (
+                                        <p className="text-xs text-[#FF5722] font-bold mt-1 ml-1">
+                                            {wkForm.selectedExercises.length} ejercicio(s) seleccionado(s)
+                                        </p>
+                                    )}
+                                </div>
+                                <button onClick={handleAddWorkout} className="w-full py-3 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold rounded-xl shadow-md transition">
                                     Guardar Entrenamiento
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MODAL EDITAR ENTRENAMIENTO */}
+                {showEditWkModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+                            <button onClick={() => setShowEditWkModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800">✖</button>
+                            <h3 className="text-2xl font-bold text-gray-800 mb-4">Editar Entrenamiento</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
+                                    <input type="text" value={editWkForm.name} onChange={e => setEditWkForm({...editWkForm, name: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] font-semibold text-gray-800" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
+                                    <textarea value={editWkForm.description} onChange={e => setEditWkForm({...editWkForm, description: e.target.value})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#FF5722] min-h-[80px] resize-none font-medium text-gray-800" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Ejercicios</label>
+                                    {exercises.length === 0 ? (
+                                        <p className="text-xs text-gray-400 italic p-3 bg-gray-50 rounded-xl border border-gray-200">No hay ejercicios disponibles.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2 max-h-[180px] overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-200">
+                                            {exercises.map(ex => {
+                                                const isSel = editWkForm.selectedExercises.some(e => String(e.id) === String(ex.id));
+                                                return (
+                                                    <div
+                                                        key={ex.id}
+                                                        onClick={() => setEditWkForm(prev => {
+                                                            const exists = prev.selectedExercises.some(e => String(e.id) === String(ex.id));
+                                                            return { ...prev, selectedExercises: exists ? prev.selectedExercises.filter(e => String(e.id) !== String(ex.id)) : [...prev.selectedExercises, ex] };
+                                                        })}
+                                                        className={`p-2.5 rounded-lg border cursor-pointer font-semibold text-sm transition-all select-none ${isSel ? 'bg-[#FF5722] text-white border-[#FF5722]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FF5722]/50'}`}
+                                                    >
+                                                        {isSel && <span className="mr-1">✓</span>}
+                                                        <span className="truncate block">{ex.name}</span>
+                                                        {ex.type && <span className="text-[10px] opacity-70 block">{ex.type}</span>}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    {editWkForm.selectedExercises.length > 0 && (
+                                        <p className="text-xs text-[#FF5722] font-bold mt-1 ml-1">{editWkForm.selectedExercises.length} ejercicio(s) seleccionado(s)</p>
+                                    )}
+                                </div>
+                                <button onClick={handleSaveEditWorkout} className="w-full py-3 bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold rounded-xl shadow-md transition">
+                                    Guardar Cambios
                                 </button>
                             </div>
                         </div>
