@@ -95,8 +95,15 @@ class LoginViewModel(
                     // React: navigate("/dashboard")
                     onGoDashboard()
                 } else {
-                    // Capturamos el mensaje de error del servidor ("Credenciales incorrectas")
-                    val errorMsg = res.errorBody()?.string() ?: "Usuario o contraseña incorrectos."
+                    // Mapeamos los errores del servidor a mensajes amigables para el usuario
+                    val errorMsg = when (res.code()) {
+                        401 -> "Usuario o contraseña incorrectos."
+                        403 -> "Tu cuenta está bloqueada o no tienes permisos."
+                        404 -> "Servidor no encontrado. Contacta con soporte."
+                        500 -> "Error en el servidor. Inténtalo más tarde."
+                        else -> "Ha ocurrido un error inesperado (Código: ${res.code()})"
+                    }
+                    
                     _state.value = _state.value.copy(
                         status = "error",
                         serverMessage = errorMsg
@@ -106,7 +113,7 @@ class LoginViewModel(
                 // Error de red / servidor caído
                 _state.value = _state.value.copy(
                     status = "error",
-                    serverMessage = "Error de conexión con el servidor. Inténtalo de nuevo."
+                    serverMessage = "No se ha podido conectar con NoteGYM. Comprueba tu conexión a internet."
                 )
             }
         }

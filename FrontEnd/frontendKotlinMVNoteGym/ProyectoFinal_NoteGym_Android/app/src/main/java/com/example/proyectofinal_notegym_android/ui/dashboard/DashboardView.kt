@@ -57,7 +57,8 @@ import java.time.format.FormatStyle
 fun DashboardView(
     username: String,        // Nombre leído desde AuthStore (DataStore)
     onLogout: () -> Unit,    // Acción de cerrar sesión (la define AppNavGraph)
-    onGoProfile: () -> Unit  // Acción para ir al perfil
+    onGoProfile: () -> Unit, // Acción para ir al perfil
+    onGoWorkouts: () -> Unit // Acción para ir a Workouts
 ) {
     Scaffold(
         // Barra superior fija reutilizable.
@@ -78,7 +79,8 @@ fun DashboardView(
                 .padding(paddingValues),
             username = username,
             onLogout = onLogout,
-            onGoProfile = onGoProfile
+            onGoProfile = onGoProfile,
+            onGoWorkouts = onGoWorkouts
         )
     }
 }
@@ -89,7 +91,8 @@ private fun DashboardScreenContent(
     modifier: Modifier = Modifier,
     username: String,
     onLogout: () -> Unit,
-    onGoProfile: () -> Unit
+    onGoProfile: () -> Unit,
+    onGoWorkouts: () -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -115,8 +118,8 @@ private fun DashboardScreenContent(
         // Card 2: acciones rápidas.
         QuickActionsCard(
             onCreateNote = { showAddNoteDialog = true },
-            onAssignRoutine = { },
-            onViewRoutines = { }
+            onAssignRoutine = onGoWorkouts,
+            onViewRoutines = onGoWorkouts
         )
 
         // Card 3: Bandeja del día (notas y rutinas)
@@ -133,7 +136,7 @@ private fun DashboardScreenContent(
         // Cards inferiores (accesos rápidos).
         QuickSectionsCard(
             onGoProfile = onGoProfile,
-            onGoTraining = { },
+            onGoTraining = onGoWorkouts,
             onGoStats = { }
         )
 

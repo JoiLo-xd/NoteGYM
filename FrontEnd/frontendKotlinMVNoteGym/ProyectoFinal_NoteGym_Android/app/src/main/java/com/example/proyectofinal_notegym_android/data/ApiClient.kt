@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 // Crea y configura Retrofit (equivalente al axios.create de React)
 object ApiClient {
 
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = "http://13.36.33.157:8080/"
 
     // Guardamos una referencia al authStore para sacar el token
     private var authStore: AuthStore? = null
