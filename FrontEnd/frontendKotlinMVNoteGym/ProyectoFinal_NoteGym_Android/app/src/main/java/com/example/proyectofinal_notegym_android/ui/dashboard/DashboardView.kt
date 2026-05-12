@@ -58,7 +58,8 @@ fun DashboardView(
     username: String,        // Nombre leído desde AuthStore (DataStore)
     onLogout: () -> Unit,    // Acción de cerrar sesión (la define AppNavGraph)
     onGoProfile: () -> Unit, // Acción para ir al perfil
-    onGoWorkouts: () -> Unit // Acción para ir a Workouts
+    onGoWorkouts: () -> Unit, // Acción para ir a Workouts
+    onGoGroups: () -> Unit    // Acción para ir a Grupos
 ) {
     Scaffold(
         // Barra superior fija reutilizable.
@@ -71,8 +72,6 @@ fun DashboardView(
         }
     ) { paddingValues: PaddingValues ->
 
-        // Importante: aquí pasamos también onLogout al contenido.
-        // Si no lo pasamos, luego no podríamos usarlo dentro.
         DashboardScreenContent(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,7 +79,8 @@ fun DashboardView(
             username = username,
             onLogout = onLogout,
             onGoProfile = onGoProfile,
-            onGoWorkouts = onGoWorkouts
+            onGoWorkouts = onGoWorkouts,
+            onGoGroups = onGoGroups
         )
     }
 }
@@ -92,18 +92,10 @@ private fun DashboardScreenContent(
     username: String,
     onLogout: () -> Unit,
     onGoProfile: () -> Unit,
-    onGoWorkouts: () -> Unit
+    onGoWorkouts: () -> Unit,
+    onGoGroups: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-
-    val currentDateState = remember { mutableStateOf(LocalDate.now()) }
-    
-    // Lista de notas persistente en esta sesión (temporal)
-    val notes = remember { mutableStateListOf<Note>() }
-    
-    // Estado para los diálogos
-    var showAddNoteDialog by remember { mutableStateOf(false) }
-    var selectedNote by remember { mutableStateOf<Note?>(null) }
 
     Column(
         modifier = modifier
@@ -117,27 +109,15 @@ private fun DashboardScreenContent(
 
         // Card 2: acciones rápidas.
         QuickActionsCard(
-            onCreateNote = { showAddNoteDialog = true },
             onAssignRoutine = onGoWorkouts,
             onViewRoutines = onGoWorkouts
-        )
-
-        // Card 3: Bandeja del día (notas y rutinas)
-        DailyInboxCard(
-            currentDate = currentDateState.value,
-            notes = notes.filter { it.createdAt == currentDateState.value },
-            onPreviousDay = { currentDateState.value = currentDateState.value.minusDays(1) },
-            onNextDay = { currentDateState.value = currentDateState.value.plusDays(1) },
-            onCreateNote = { showAddNoteDialog = true },
-            onAssignRoutine = { },
-            onNoteClick = { selectedNote = it }
         )
 
         // Cards inferiores (accesos rápidos).
         QuickSectionsCard(
             onGoProfile = onGoProfile,
             onGoTraining = onGoWorkouts,
-            onGoStats = { }
+            onGoGroups = onGoGroups
         )
 
         // Botón logout (temporal para probar la navegación y limpiar sesión).
@@ -148,141 +128,6 @@ private fun DashboardScreenContent(
             Text("Cerrar sesión")
         }
     }
-
-    // Diálogo para crear nota
-    if (showAddNoteDialog) {
-        AddNoteDialog(
-            onDismiss = { showAddNoteDialog = false },
-            onSave = { title, body ->
-                notes.add(Note(title = title, body = body, createdAt = currentDateState.value))
-                showAddNoteDialog = false
-            }
-        )
-    }
-
-    // Diálogo para ver/editar/borrar nota
-    selectedNote?.let { note ->
-        EditNoteDialog(
-            note = note,
-            onDismiss = { selectedNote = null },
-            onSave = { newTitle, newBody ->
-                val index = notes.indexOf(note)
-                if (index != -1) {
-                    notes[index] = note.copy(title = newTitle, body = newBody)
-                }
-                selectedNote = null
-            },
-            onDelete = {
-                notes.remove(note)
-                selectedNote = null
-            }
-        )
-    }
-}
-
-@Composable
-private fun AddNoteDialog(
-    onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Nueva Nota") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Título") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                TextField(
-                    value = body,
-                    onValueChange = { body = it },
-                    label = { Text("Contenido") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { if (title.isNotBlank()) onSave(title, body) },
-                enabled = title.isNotBlank()
-            ) {
-                Text("Guardar")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
-    )
-}
-
-@Composable
-private fun EditNoteDialog(
-    note: Note,
-    onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit,
-    onDelete: () -> Unit
-) {
-    var title by remember { mutableStateOf(note.title) }
-    var body by remember { mutableStateOf(note.body) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Detalles de la Nota")
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = "Borrar nota",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Título") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                TextField(
-                    value = body,
-                    onValueChange = { body = it },
-                    label = { Text("Contenido") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 5
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { if (title.isNotBlank()) onSave(title, body) },
-                enabled = title.isNotBlank()
-            ) {
-                Text("Actualizar")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cerrar")
-            }
-        }
-    )
 }
 
 // Card de bienvenida con estilo app (limpio, simple y legible).
@@ -301,7 +146,7 @@ private fun WelcomeCard(username: String) {
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text = "Planifica tu entrenamiento y gestiona tus notas desde aquí.",
+                text = "Planifica tu entrenamiento y gestiona tus grupos desde aquí.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -312,7 +157,6 @@ private fun WelcomeCard(username: String) {
 // Card que agrupa los botones de acciones rápidas.
 @Composable
 private fun QuickActionsCard(
-    onCreateNote: () -> Unit,
     onAssignRoutine: () -> Unit,
     onViewRoutines: () -> Unit
 ) {
@@ -329,9 +173,7 @@ private fun QuickActionsCard(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            // Botonera en 2 filas para móvil.
             QuickActionsRow(
-                onCreateNote = onCreateNote,
                 onAssignRoutine = onAssignRoutine,
                 onViewRoutines = onViewRoutines
             )
@@ -339,168 +181,32 @@ private fun QuickActionsCard(
     }
 }
 
-// Botonera: dos botones arriba + uno abajo a ancho completo.
+// Botonera: dos botones arriba.
 @Composable
 private fun QuickActionsRow(
-    onCreateNote: () -> Unit,
     onAssignRoutine: () -> Unit,
     onViewRoutines: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Button(
+            onClick = onAssignRoutine,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFF7A00),
+                contentColor = Color.White
+            )
         ) {
-            Button(
-                onClick = onCreateNote,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF7A00),
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Crear nota")
-            }
-
-            OutlinedButton(
-                onClick = onAssignRoutine,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Asignar rutina")
-            }
+            Text("Asignar rutina")
         }
 
         OutlinedButton(
             onClick = onViewRoutines,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.weight(1f)
         ) {
             Text("Ver rutinas")
-        }
-    }
-}
-
-// Bandeja de entrada diaria
-@Composable
-private fun DailyInboxCard(
-    currentDate: LocalDate,
-    notes: List<Note>,
-    onPreviousDay: () -> Unit,
-    onNextDay: () -> Unit,
-    onCreateNote: () -> Unit,
-    onAssignRoutine: () -> Unit,
-    onNoteClick: (Note) -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Cabecera con flechas y fecha
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onPreviousDay) {
-                    Icon(imageVector = Icons.Filled.ChevronLeft, contentDescription = "Día anterior")
-                }
-
-                val dateText = when (currentDate) {
-                    LocalDate.now() -> "Hoy"
-                    LocalDate.now().minusDays(1) -> "Ayer"
-                    LocalDate.now().plusDays(1) -> "Mañana"
-                    else -> currentDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
-                }
-
-                Text(
-                    text = dateText,
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                IconButton(onClick = onNextDay) {
-                    Icon(imageVector = Icons.Filled.ChevronRight, contentDescription = "Día siguiente")
-                }
-            }
-
-            // Contenido: Notas y Rutinas
-            if (notes.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Inbox,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Text(
-                        text = "No hay notas ni rutinas para este día.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    notes.forEach { note ->
-                        NoteItem(note = note, onClick = { onNoteClick(note) })
-                    }
-                }
-            }
-
-            // Botonera de acciones
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Button(
-                    onClick = onCreateNote,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF7A00),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Añadir nota")
-                }
-
-                OutlinedButton(
-                    onClick = onAssignRoutine,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Añadir rutina")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NoteItem(note: Note, onClick: () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = note.title, style = MaterialTheme.typography.titleSmall)
-            if (note.body.isNotBlank()) {
-                Text(
-                    text = note.body,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
-                )
-            }
         }
     }
 }
@@ -510,7 +216,7 @@ private fun NoteItem(note: Note, onClick: () -> Unit) {
 private fun QuickSectionsCard(
     onGoProfile: () -> Unit,
     onGoTraining: () -> Unit,
-    onGoStats: () -> Unit
+    onGoGroups: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionCard(
@@ -522,19 +228,20 @@ private fun QuickSectionsCard(
 
         SectionCard(
             title = "Entrenamientos",
-            subtitle = "Rutinas, historial y notas",
+            subtitle = "Rutinas, historial y más",
             icon = Icons.Filled.FitnessCenter,
             onClick = onGoTraining
         )
 
         SectionCard(
-            title = "Estadísticas",
-            subtitle = "Progreso, marcas y objetivos",
-            icon = Icons.Filled.BarChart,
-            onClick = onGoStats
+            title = "Grupos",
+            subtitle = "Entrenamientos de tu grupo/entrenador",
+            icon = Icons.Filled.Inbox,
+            onClick = onGoGroups
         )
     }
 }
+
 
 // Card reutilizable para cada bloque del dashboard.
 @Composable

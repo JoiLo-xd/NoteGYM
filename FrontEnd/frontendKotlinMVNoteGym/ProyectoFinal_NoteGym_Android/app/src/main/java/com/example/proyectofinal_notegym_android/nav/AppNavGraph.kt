@@ -115,6 +115,9 @@ fun AppNavGraph(
         },
         onGoWorkouts = {
             navController.navigate(NavRoutes.Workouts.route)
+        },
+        onGoGroups = {
+            navController.navigate(NavRoutes.Groups.route)
         }
     )
         }
@@ -143,6 +146,30 @@ fun AppNavGraph(
                 usernameState.value = authStore.getUsername()
             }
 
+            val vm: WorkoutViewModel = viewModel(
+                factory = WorkoutViewModelFactory(api = ApiClient.api)
+            )
+
+            WorkoutView(
+                viewModel = vm,
+                username = usernameState.value,
+                onBack = { navController.popBackStack() },
+                onWorkoutClick = { workoutId ->
+                    navController.navigate(NavRoutes.WorkoutExecution.createRoute(workoutId))
+                }
+            )
+        }
+
+        composable(NavRoutes.Groups.route) {
+            val context = LocalContext.current
+            val authStore = remember { AuthStore(context) }
+            val usernameState = remember { mutableStateOf("") }
+
+            LaunchedEffect(Unit) {
+                usernameState.value = authStore.getUsername()
+            }
+
+            // De momento usamos WorkoutView pero podríamos filtrar por grupos
             val vm: WorkoutViewModel = viewModel(
                 factory = WorkoutViewModelFactory(api = ApiClient.api)
             )
