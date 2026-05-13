@@ -152,14 +152,6 @@ fun LoginView(
                         }
                     }
 
-                    TextButton(
-                        onClick = {
-                            onGoDashboard()
-                        },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        Text("Entrar en modo demo")
-                    }
 
                     // Enlace a registro
                     // React: <Link to="/newUserGym">
