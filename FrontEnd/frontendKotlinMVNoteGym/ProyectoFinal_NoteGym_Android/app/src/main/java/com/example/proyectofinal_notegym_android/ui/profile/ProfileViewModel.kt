@@ -13,6 +13,9 @@ class ProfileViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
+    private val _updateStatus = MutableStateFlow<UpdateStatus>(UpdateStatus.Idle)
+    val updateStatus: StateFlow<UpdateStatus> = _updateStatus
+
     init {
         loadProfile()
     }
@@ -35,17 +38,31 @@ class ProfileViewModel : ViewModel() {
 
     fun updateProfile(user: UserDto) {
         viewModelScope.launch {
+            _updateStatus.value = UpdateStatus.Loading
             try {
                 val response = ApiClient.api.updateProfile(user)
                 if (response.isSuccessful) {
                     _uiState.value = ProfileUiState.Success(response.body()!!)
-                    // Podríamos añadir un mensaje de éxito aquí
+                    _updateStatus.value = UpdateStatus.Success
+                } else {
+                    _updateStatus.value = UpdateStatus.Error("Error al actualizar: ${response.code()}")
                 }
             } catch (e: Exception) {
-                // Manejar error de actualización
+                _updateStatus.value = UpdateStatus.Error("Error de red: ${e.message}")
             }
         }
     }
+
+    fun clearUpdateStatus() {
+        _updateStatus.value = UpdateStatus.Idle
+    }
+}
+
+sealed class UpdateStatus {
+    object Idle : UpdateStatus()
+    object Loading : UpdateStatus()
+    object Success : UpdateStatus()
+    data class Error(val message: String) : UpdateStatus()
 }
 
 sealed class ProfileUiState {

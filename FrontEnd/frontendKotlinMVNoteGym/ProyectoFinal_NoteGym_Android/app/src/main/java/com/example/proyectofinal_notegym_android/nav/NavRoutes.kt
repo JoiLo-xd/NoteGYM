@@ -6,8 +6,8 @@ sealed class NavRoutes(val route: String) {
     data object Dashboard : NavRoutes("dashboard")
     data object Profile : NavRoutes("profile")
     data object Workouts : NavRoutes("workouts")
-    data object Groups : NavRoutes("groups")
     data object WorkoutExecution : NavRoutes("workout_execution/{workoutId}") {
         fun createRoute(workoutId: Int) = "workout_execution/$workoutId"
     }
+    data object ExerciseGroup : NavRoutes("exercise_group")
 }

@@ -1,9 +1,12 @@
 package com.example.proyectofinal_notegym_android.ui.workouts
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -20,6 +23,7 @@ import com.example.proyectofinal_notegym_android.data.Exercise
 import com.example.proyectofinal_notegym_android.data.Workout
 import com.example.proyectofinal_notegym_android.ui.components.HeaderGymBar
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 @Composable
 fun WorkoutExecutionView(
@@ -31,11 +35,12 @@ fun WorkoutExecutionView(
     var step by remember { mutableStateOf(1) } // 1: Config, 2: Execution, 3: Summary
     var seriesPerExercise by remember { mutableIntStateOf(3) }
     var restTimeSeconds by remember { mutableIntStateOf(60) }
-    var exerciseDurationSeconds by remember { mutableIntStateOf(30) } // Nuevo: Temporizador por entrenamiento
+    var setTimeSeconds by remember { mutableIntStateOf(45) }
     
     // Stats finales
     var totalReps by remember { mutableIntStateOf(0) }
     var totalSeriesCompleted by remember { mutableIntStateOf(0) }
+    var totalTimeSeconds by remember { mutableIntStateOf(0) }
 
     when (step) {
         1 -> WorkoutConfigScreen(
@@ -43,10 +48,10 @@ fun WorkoutExecutionView(
             username = username,
             series = seriesPerExercise,
             rest = restTimeSeconds,
-            duration = exerciseDurationSeconds,
+            setTime = setTimeSeconds,
             onSeriesChange = { seriesPerExercise = it },
             onRestChange = { restTimeSeconds = it },
-            onDurationChange = { exerciseDurationSeconds = it },
+            onSetTimeChange = { setTimeSeconds = it },
             onStart = { step = 2 },
             onBack = onBack
         )
@@ -55,10 +60,11 @@ fun WorkoutExecutionView(
             username = username,
             seriesTarget = seriesPerExercise,
             restTarget = restTimeSeconds,
-            durationTarget = exerciseDurationSeconds,
-            onComplete = { series, reps ->
+            setTarget = setTimeSeconds,
+            onComplete = { series, reps, time ->
                 totalSeriesCompleted = series
                 totalReps = reps
+                totalTimeSeconds = time
                 step = 3
             }
         )
@@ -67,7 +73,8 @@ fun WorkoutExecutionView(
             username = username,
             totalSeries = totalSeriesCompleted,
             totalReps = totalReps,
-            onFinish = { onFinish(totalSeriesCompleted, totalReps, 0) }
+            totalTimeSeconds = totalTimeSeconds,
+            onFinish = { onFinish(totalSeriesCompleted, totalReps, totalTimeSeconds) }
         )
     }
 }
@@ -78,10 +85,10 @@ fun WorkoutConfigScreen(
     username: String,
     series: Int,
     rest: Int,
-    duration: Int,
+    setTime: Int,
     onSeriesChange: (Int) -> Unit,
     onRestChange: (Int) -> Unit,
-    onDurationChange: (Int) -> Unit,
+    onSetTimeChange: (Int) -> Unit,
     onStart: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -92,7 +99,7 @@ fun WorkoutConfigScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(workout.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text("Personaliza tu sesión", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
@@ -114,6 +121,24 @@ fun WorkoutConfigScreen(
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("Duración de cada serie (segundos)", fontWeight = FontWeight.Medium)
+                    Slider(
+                        value = setTime.toFloat(),
+                        onValueChange = { onSetTimeChange(it.toInt()) },
+                        valueRange = 5f..120f,
+                        steps = 22,
+                        colors = SliderDefaults.colors(
+                            thumbColor = orangeNoteGym,
+                            activeTrackColor = orangeNoteGym,
+                            inactiveTrackColor = orangeNoteGym.copy(alpha = 0.24f)
+                        )
+                    )
+                    Text("$setTime segundos", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleLarge)
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text("Tiempo de descanso (segundos)", fontWeight = FontWeight.Medium)
                     Slider(
                         value = rest.toFloat(),
@@ -130,25 +155,7 @@ fun WorkoutConfigScreen(
                 }
             }
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Temporizador por ejercicio (segundos)", fontWeight = FontWeight.Medium)
-                    Slider(
-                        value = duration.toFloat(),
-                        onValueChange = { onDurationChange(it.toInt()) },
-                        valueRange = 10f..300f,
-                        steps = 28,
-                        colors = SliderDefaults.colors(
-                            thumbColor = orangeNoteGym,
-                            activeTrackColor = orangeNoteGym,
-                            inactiveTrackColor = orangeNoteGym.copy(alpha = 0.24f)
-                        )
-                    )
-                    Text("$duration segundos", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleLarge)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
             Button(
                 onClick = onStart, 
@@ -171,27 +178,36 @@ fun WorkoutActiveScreen(
     username: String,
     seriesTarget: Int,
     restTarget: Int,
-    durationTarget: Int,
-    onComplete: (Int, Int) -> Unit
+    setTarget: Int,
+    onComplete: (Int, Int, Int) -> Unit
 ) {
     val orangeNoteGym = Color(0xFFFF7A00)
     var currentExerciseIndex by remember { mutableIntStateOf(0) }
     var currentSeries by remember { mutableIntStateOf(1) }
     var isResting by remember { mutableStateOf(false) }
-    var timeLeft by remember { mutableIntStateOf(restTarget) }
-    var exerciseTimeLeft by remember { mutableIntStateOf(durationTarget) }
+    var restTimeLeft by remember { mutableIntStateOf(restTarget) }
+    var setTimeLeft by remember { mutableIntStateOf(setTarget) }
     var totalRepsAccumulated by remember { mutableIntStateOf(0) }
     var totalSeriesAccumulated by remember { mutableIntStateOf(0) }
+    var totalTimeSeconds by remember { mutableIntStateOf(0) }
 
     val currentExercise = workout.exercises.getOrNull(currentExerciseIndex)
 
-    // Timer para descanso
+    // Timer de tiempo total
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            totalTimeSeconds++
+        }
+    }
+
+    // Timer de descanso
     LaunchedEffect(isResting) {
         if (isResting) {
-            timeLeft = restTarget
-            while (timeLeft > 0) {
+            restTimeLeft = restTarget
+            while (restTimeLeft > 0) {
                 delay(1000)
-                timeLeft--
+                restTimeLeft--
             }
             isResting = false
             if (currentSeries < seriesTarget) {
@@ -201,19 +217,19 @@ fun WorkoutActiveScreen(
                     currentExerciseIndex++
                     currentSeries = 1
                 } else {
-                    onComplete(totalSeriesAccumulated, totalRepsAccumulated)
+                    onComplete(totalSeriesAccumulated, totalRepsAccumulated, totalTimeSeconds)
                 }
             }
         }
     }
 
-    // Timer para el ejercicio
-    LaunchedEffect(currentExerciseIndex, currentSeries, isResting) {
+    // Timer de set (solo cuando no está descansando)
+    LaunchedEffect(isResting, currentSeries, currentExerciseIndex) {
         if (!isResting) {
-            exerciseTimeLeft = durationTarget
-            while (exerciseTimeLeft > 0 && !isResting) {
+            setTimeLeft = setTarget
+            while (setTimeLeft > 0 && !isResting) {
                 delay(1000)
-                exerciseTimeLeft--
+                setTimeLeft--
             }
         }
     }
@@ -244,13 +260,15 @@ fun WorkoutActiveScreen(
                     Text("DESCANSO", style = MaterialTheme.typography.headlineSmall, color = Color.Gray)
                     Spacer(modifier = Modifier.height(16.dp))
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp).background(orangeNoteGym.copy(alpha = 0.1f), CircleShape)) {
-                        Text(timeLeft.toString(), style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Bold, color = orangeNoteGym)
+                        Text(restTimeLeft.toString(), style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Bold, color = orangeNoteGym)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     TextButton(onClick = { isResting = false }) { Text("Saltar descanso", color = orangeNoteGym) }
                 } else {
                     Text("Serie $currentSeries de $seriesTarget", style = MaterialTheme.typography.titleLarge)
                     
+                    Text("Tiempo restante: $setTimeLeft s", style = MaterialTheme.typography.bodyLarge, color = if (setTimeLeft < 5) Color.Red else Color.Black)
+
                     // Contador de series más prominente y naranja
                     Surface(
                         color = orangeNoteGym.copy(alpha = 0.1f),
@@ -283,21 +301,8 @@ fun WorkoutActiveScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(64.dp))
                             Text("COMPLETAR SERIE", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("(${setTarget - setTimeLeft}s)", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Temporizador de ejercicio abajo
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Timer, contentDescription = null, tint = orangeNoteGym)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Tiempo restante: $exerciseTimeLeft s",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = if (exerciseTimeLeft < 10) Color.Red else orangeNoteGym,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
             }
@@ -305,7 +310,7 @@ fun WorkoutActiveScreen(
             Spacer(modifier = Modifier.weight(1f))
             
             OutlinedButton(
-                onClick = { onComplete(totalSeriesAccumulated, totalRepsAccumulated) },
+                onClick = { onComplete(totalSeriesAccumulated, totalRepsAccumulated, totalTimeSeconds) },
                 modifier = Modifier.fillMaxWidth(),
                 border = androidx.compose.foundation.BorderStroke(1.dp, orangeNoteGym)
             ) {
@@ -321,9 +326,15 @@ fun WorkoutSummaryScreen(
     username: String,
     totalSeries: Int,
     totalReps: Int,
+    totalTimeSeconds: Int,
     onFinish: () -> Unit
 ) {
     val orangeNoteGym = Color(0xFFFF7A00)
+    
+    val minutes = totalTimeSeconds / 60
+    val seconds = totalTimeSeconds % 60
+    val timeStr = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+
     Scaffold(
         topBar = { HeaderGymBar(title = "Resumen", userName = username, onProfileClick = {}) }
     ) { padding ->
@@ -340,6 +351,7 @@ fun WorkoutSummaryScreen(
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 SummaryStat("Series", totalSeries.toString(), orangeNoteGym)
+                SummaryStat("Tiempo", timeStr, orangeNoteGym)
                 SummaryStat("Reps", totalReps.toString(), orangeNoteGym)
             }
             

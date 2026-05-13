@@ -24,6 +24,7 @@ import com.example.proyectofinal_notegym_android.ui.workouts.WorkoutView
 import com.example.proyectofinal_notegym_android.ui.workouts.WorkoutViewModel
 import com.example.proyectofinal_notegym_android.ui.workouts.WorkoutViewModelFactory
 import com.example.proyectofinal_notegym_android.ui.workouts.WorkoutExecutionView
+import com.example.proyectofinal_notegym_android.ui.workouts.ExerciseGroupView
 import androidx.compose.runtime.collectAsState
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -116,8 +117,8 @@ fun AppNavGraph(
         onGoWorkouts = {
             navController.navigate(NavRoutes.Workouts.route)
         },
-        onGoGroups = {
-            navController.navigate(NavRoutes.Groups.route)
+        onGoExercises = {
+            navController.navigate(NavRoutes.ExerciseGroup.route)
         }
     )
         }
@@ -160,7 +161,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(NavRoutes.Groups.route) {
+        composable(NavRoutes.ExerciseGroup.route) {
             val context = LocalContext.current
             val authStore = remember { AuthStore(context) }
             val usernameState = remember { mutableStateOf("") }
@@ -169,18 +170,14 @@ fun AppNavGraph(
                 usernameState.value = authStore.getUsername()
             }
 
-            // De momento usamos WorkoutView pero podríamos filtrar por grupos
             val vm: WorkoutViewModel = viewModel(
                 factory = WorkoutViewModelFactory(api = ApiClient.api)
             )
 
-            WorkoutView(
+            ExerciseGroupView(
                 viewModel = vm,
                 username = usernameState.value,
-                onBack = { navController.popBackStack() },
-                onWorkoutClick = { workoutId ->
-                    navController.navigate(NavRoutes.WorkoutExecution.createRoute(workoutId))
-                }
+                onBack = { navController.popBackStack() }
             )
         }
 

@@ -28,6 +28,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -37,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyectofinal_notegym_android.data.UserDto
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,8 +58,26 @@ fun ProfileView(
     viewModel: ProfileViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val updateStatus by viewModel.updateStatus.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(updateStatus) {
+        when (updateStatus) {
+            is UpdateStatus.Success -> {
+                snackbarHostState.showSnackbar("Perfil actualizado correctamente")
+                viewModel.clearUpdateStatus()
+            }
+            is UpdateStatus.Error -> {
+                snackbarHostState.showSnackbar((updateStatus as UpdateStatus.Error).message)
+                viewModel.clearUpdateStatus()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Mi Perfil") },
@@ -93,6 +115,7 @@ fun ProfileView(
                 is ProfileUiState.Success -> {
                     ProfileContent(
                         user = state.user,
+                        isUpdating = updateStatus is UpdateStatus.Loading,
                         onSave = { updatedUser -> viewModel.updateProfile(updatedUser) }
                     )
                 }
@@ -104,6 +127,7 @@ fun ProfileView(
 @Composable
 fun ProfileContent(
     user: UserDto,
+    isUpdating: Boolean,
     onSave: (UserDto) -> Unit
 ) {
     var name by remember { mutableStateOf(user.name ?: "") }
@@ -218,9 +242,14 @@ fun ProfileContent(
                 onSave(user.copy(name = name, mail = email, sex = gender))
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isUpdating,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7A00))
         ) {
-            Text("Guardar Cambios", color = Color.White)
+            if (isUpdating) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+            } else {
+                Text("Guardar Cambios", color = Color.White)
+            }
         }
     }
 }

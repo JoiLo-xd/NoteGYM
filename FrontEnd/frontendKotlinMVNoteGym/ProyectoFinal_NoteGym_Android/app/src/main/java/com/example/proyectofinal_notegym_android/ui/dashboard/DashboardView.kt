@@ -1,77 +1,43 @@
 package com.example.proyectofinal_notegym_android.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Inbox
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.proyectofinal_notegym_android.data.Note
+import androidx.compose.ui.unit.sp
 import com.example.proyectofinal_notegym_android.ui.components.HeaderGymBar
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
-// DashboardView es la pantalla principal interna.
-// Aquí montamos: header fijo + contenido con scroll.
 @Composable
 fun DashboardView(
-    username: String,        // Nombre leído desde AuthStore (DataStore)
-    onLogout: () -> Unit,    // Acción de cerrar sesión (la define AppNavGraph)
-    onGoProfile: () -> Unit, // Acción para ir al perfil
-    onGoWorkouts: () -> Unit, // Acción para ir a Workouts
-    onGoGroups: () -> Unit    // Acción para ir a Grupos
+    username: String,
+    onLogout: () -> Unit,
+    onGoProfile: () -> Unit,
+    onGoWorkouts: () -> Unit,
+    onGoExercises: () -> Unit
 ) {
     Scaffold(
-        // Barra superior fija reutilizable.
         topBar = {
             HeaderGymBar(
-                title = "Dashboard",
+                title = "NoteGYM",
                 userName = username,
                 onProfileClick = onGoProfile
             )
         }
-    ) { paddingValues: PaddingValues ->
-
+    ) { paddingValues ->
         DashboardScreenContent(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,12 +46,11 @@ fun DashboardView(
             onLogout = onLogout,
             onGoProfile = onGoProfile,
             onGoWorkouts = onGoWorkouts,
-            onGoGroups = onGoGroups
+            onGoExercises = onGoExercises
         )
     }
 }
 
-// Separo el contenido del Scaffold para tenerlo ordenado.
 @Composable
 private fun DashboardScreenContent(
     modifier: Modifier = Modifier,
@@ -93,195 +58,198 @@ private fun DashboardScreenContent(
     onLogout: () -> Unit,
     onGoProfile: () -> Unit,
     onGoWorkouts: () -> Unit,
-    onGoGroups: () -> Unit
+    onGoExercises: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val orangeNoteGym = Color(0xFFFF7A00)
 
     Column(
         modifier = modifier
             .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .background(Color(0xFFF8F9FA))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        // Bienvenida mejorada
+        WelcomeBanner(username = username)
 
-        // Card 1: bienvenida.
-        WelcomeCard(username = username)
-
-        // Card 2: acciones rápidas.
-        QuickActionsCard(
-            onAssignRoutine = onGoWorkouts,
-            onViewRoutines = onGoWorkouts
+        Text(
+            text = "Acceso Rápido",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.DarkGray
         )
 
-        // Cards inferiores (accesos rápidos).
-        QuickSectionsCard(
-            onGoProfile = onGoProfile,
-            onGoTraining = onGoWorkouts,
-            onGoGroups = onGoGroups
+        // Secciones principales como Cards grandes y coloridas
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            MainActionCard(
+                title = "Rutinas",
+                icon = Icons.Default.FitnessCenter,
+                color = orangeNoteGym,
+                modifier = Modifier.weight(1f),
+                onClick = onGoWorkouts
+            )
+            MainActionCard(
+                title = "Ejercicios",
+                icon = Icons.AutoMirrored.Filled.FormatListBulleted,
+                color = Color(0xFF333333),
+                modifier = Modifier.weight(1f),
+                onClick = onGoExercises
+            )
+        }
+
+        // Otras secciones
+        Text(
+            text = "Gestión",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.DarkGray
         )
 
-        // Botón logout (temporal para probar la navegación y limpiar sesión).
-        OutlinedButton(
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Cerrar sesión")
-        }
-    }
-}
-
-// Card de bienvenida con estilo app (limpio, simple y legible).
-@Composable
-private fun WelcomeCard(username: String) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = "Bienvenid@, $username",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = "Planifica tu entrenamiento y gestiona tus grupos desde aquí.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-// Card que agrupa los botones de acciones rápidas.
-@Composable
-private fun QuickActionsCard(
-    onAssignRoutine: () -> Unit,
-    onViewRoutines: () -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                text = "Acciones rápidas",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            QuickActionsRow(
-                onAssignRoutine = onAssignRoutine,
-                onViewRoutines = onViewRoutines
-            )
-        }
-    }
-}
-
-// Botonera: dos botones arriba.
-@Composable
-private fun QuickActionsRow(
-    onAssignRoutine: () -> Unit,
-    onViewRoutines: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Button(
-            onClick = onAssignRoutine,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFF7A00),
-                contentColor = Color.White
-            )
-        ) {
-            Text("Asignar rutina")
-        }
-
-        OutlinedButton(
-            onClick = onViewRoutines,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("Ver rutinas")
-        }
-    }
-}
-
-// Sección inferior del dashboard.
-@Composable
-private fun QuickSectionsCard(
-    onGoProfile: () -> Unit,
-    onGoTraining: () -> Unit,
-    onGoGroups: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionCard(
-            title = "Perfil",
-            subtitle = "Edita tus datos y preferencias",
-            icon = Icons.Filled.Person,
+        ManagementItem(
+            title = "Mi Perfil",
+            subtitle = "Configuración y datos personales",
+            icon = Icons.Default.Person,
             onClick = onGoProfile
         )
 
-        SectionCard(
-            title = "Entrenamientos",
-            subtitle = "Rutinas, historial y más",
-            icon = Icons.Filled.FitnessCenter,
-            onClick = onGoTraining
-        )
+        Spacer(modifier = Modifier.height(20.dp))
 
-        SectionCard(
-            title = "Grupos",
-            subtitle = "Entrenamientos de tu grupo/entrenador",
-            icon = Icons.Filled.Inbox,
-            onClick = onGoGroups
-        )
+        // Botón Logout estilizado
+        Button(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Cerrar Sesión", color = Color.Red, fontWeight = FontWeight.Bold)
+        }
+        
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
-
-// Card reutilizable para cada bloque del dashboard.
 @Composable
-private fun SectionCard(
+private fun WelcomeBanner(username: String) {
+    val orangeNoteGym = Color(0xFFFF7A00)
+    val orangeDark = Color(0xFFE66E00)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Brush.horizontalGradient(listOf(orangeNoteGym, orangeDark)))
+                .padding(24.dp)
+                .fillMaxWidth()
+        ) {
+            Column {
+                Text(
+                    text = "¡Hola, $username!",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "¿Qué vamos a entrenar hoy?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Tu progreso te espera",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.Whatshot,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(80.dp)
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 8.dp),
+                tint = Color.White.copy(alpha = 0.2f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainActionCard(
+    title: String,
+    icon: ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .height(140.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = color),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        }
+    }
+}
+
+@Composable
+private fun ManagementItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
     onClick: () -> Unit
 ) {
+    val orangeNoteGym = Color(0xFFFF7A00)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            Surface(
+                color = orangeNoteGym.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.size(48.dp)
             ) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = orangeNoteGym)
+                }
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                tint = Color(0xFFFF7A00)
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(subtitle, color = Color.Gray, fontSize = 14.sp)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
         }
     }
 }
