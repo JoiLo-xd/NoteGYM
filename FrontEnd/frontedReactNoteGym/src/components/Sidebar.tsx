@@ -12,7 +12,6 @@ const baseMenuItems = [
     { name: "Mis Rutinas", path: "/rutinas" },
     { name: "Entrenar", path: "/entrenar" },
     { name: "Grupos", path: "/grupos" },
-    { name: "Estadísticas", path: "/stats" },
 ];
 
 const adminMenuItems = [
